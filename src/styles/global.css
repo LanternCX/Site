@@ -103,11 +103,18 @@ pre {
 pre > code {
 	all: unset;
 }
-blockquote {
+blockquote,
+.callout {
 	border-left: 4px solid var(--accent);
 	padding: 0 0 0 20px;
 	margin: 0;
 	font-size: 1.333em;
+}
+.callout-title {
+	font-weight: 700;
+}
+summary.callout-title {
+	cursor: pointer;
 }
 hr {
 	border: none;
