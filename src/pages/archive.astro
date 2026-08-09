@@ -284,6 +284,7 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	}
 
 	.month-group li {
+		position: relative;
 		display: grid;
 		grid-template-columns: 2.5rem minmax(0, 1fr) 6rem;
 		gap: 1.5rem;
@@ -316,6 +317,12 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 
 	.archive-copy a:hover {
 		color: var(--accent);
+	}
+
+	.archive-copy a::after {
+		position: absolute;
+		content: '';
+		inset: 0;
 	}
 
 	.archive-copy p {

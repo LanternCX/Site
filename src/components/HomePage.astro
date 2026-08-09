@@ -241,6 +241,7 @@ const pageUrl = (page: number) => page === 1 ? '/' : `/page/${page}/`;
 	}
 
 	.post-list li {
+		position: relative;
 		display: grid;
 		grid-template-columns: 8rem minmax(0, 1fr) 6rem;
 		gap: 2rem;
@@ -269,6 +270,12 @@ const pageUrl = (page: number) => page === 1 ? '/' : `/page/${page}/`;
 
 	.post-copy a:hover {
 		color: var(--accent);
+	}
+
+	.post-copy a::after {
+		position: absolute;
+		content: '';
+		inset: 0;
 	}
 
 	.post-copy p {
