@@ -214,7 +214,7 @@ summary {
 }
 
 .prose > * {
-	max-width: 68ch;
+	max-width: 760px;
 }
 
 .prose > :first-child {
