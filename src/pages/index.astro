@@ -1,38 +1,12 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import HomePage from '../components/HomePage.astro';
+import { isArticle, pagesOf } from '../utils/content.mjs';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const allPosts = (await getCollection('blog'))
+	.filter(({ id }) => isArticle(id))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const pages = pagesOf(allPosts, 8);
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<header class="intro">
-				<p>{SITE_DESCRIPTION}</p>
-				<h1>文章</h1>
-			</header>
-			<ol class="posts">
-				{
-					posts.map((post) => (
-						<li>
-							<a href={`/blog/${post.id}/`}>{post.data.title}</a>
-							<time datetime={post.data.pubDate.toISOString()}>
-								{post.data.pubDate.toLocaleDateString('zh-CN')}
-							</time>
-						</li>
-					))
-				}
-			</ol>
-		</main>
-	</body>
-</html>
+<HomePage posts={pages[0]} {allPosts} currentPage={1} lastPage={pages.length} />

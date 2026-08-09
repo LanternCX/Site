@@ -1,34 +1,61 @@
 ---
-import type { CollectionEntry } from 'astro:content';
 import 'katex/dist/katex.min.css';
 import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+import { formatDate } from '../utils/content.mjs';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props {
+	title: string;
+	description?: string;
+	pubDate: Date;
+	updatedDate?: Date;
+	category: string;
+	categoryName: string;
+	contentHeading?: string;
+}
 
-const { title, description, pubDate, updatedDate } = Astro.props;
+const { title, description, pubDate, updatedDate, category, categoryName, contentHeading } = Astro.props;
+const duplicateContentTitle = contentHeading === title;
 ---
 
 <!doctype html>
 <html lang="zh-CN">
 	<head>
-		<BaseHead title={title} description={description ?? ''} />
+		<BaseHead title={`${title} · ${SITE_TITLE}`} description={description ?? title} keywords={[category, categoryName]} />
 	</head>
 	<body>
-		<Header />
-		<main>
-			<article>
-				<header class="article-header">
-					<h1>{title}</h1>
-					<p>
-						<time datetime={pubDate.toISOString()}>{pubDate.toLocaleDateString('zh-CN')}</time>
-						{updatedDate && <> · 更新于 {updatedDate.toLocaleDateString('zh-CN')}</>}
-					</p>
-				</header>
-				<div class="prose">
-					<slot />
-				</div>
-			</article>
-		</main>
+		<div class="site-shell">
+			<Header />
+			<main id="main-content" class="page-content article-page">
+				<article class:list={{ 'duplicate-content-title': duplicateContentTitle }}>
+					<header class="article-header">
+						<p class="article-kicker">{categoryName}</p>
+						<h1>{title}</h1>
+						{description && <p class="article-description">{description}</p>}
+						<p class="article-meta">
+							<span>发布于 <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time></span>
+							{updatedDate && <span>更新于 <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time></span>}
+						</p>
+					</header>
+					<div class="prose">
+						<slot />
+					</div>
+				</article>
+				<a class="text-link article-back" href="/archive/">返回文章归档</a>
+			</main>
+			<Footer />
+		</div>
 	</body>
 </html>
+
+<style>
+	.duplicate-content-title :global(.prose > h2:first-of-type) {
+		display: none;
+	}
+
+	.article-back {
+		margin-top: 5rem;
+	}
+</style>

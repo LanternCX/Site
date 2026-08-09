@@ -1,6 +1,7 @@
 ---
 import { type CollectionEntry, getCollection, render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
+import { categoryLabel, firstHeading } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
@@ -15,6 +16,11 @@ const post = Astro.props;
 const { Content } = await render(post);
 ---
 
-<BlogPost {...post.data}>
+<BlogPost
+	{...post.data}
+	category={post.id.split('/')[0]}
+	categoryName={categoryLabel(post.id, post.filePath)}
+	contentHeading={firstHeading(post.body)}
+>
 	<Content />
 </BlogPost>

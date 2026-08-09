@@ -1,15 +1,17 @@
 ---
 import { Font } from 'astro:assets';
-import { SITE_TITLE } from '../consts';
+import { SITE_KEYWORDS, SITE_TITLE } from '../consts';
 import '../styles/global.css';
 
 interface Props {
 	title: string;
 	description: string;
+	keywords?: string[];
 }
 
-const { title, description } = Astro.props;
+const { title, description, keywords = [] } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const pageKeywords = [...new Set([...SITE_KEYWORDS, ...keywords])];
 ---
 
 <meta charset="utf-8" />
@@ -21,12 +23,29 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 <link rel="canonical" href={canonicalURL} />
 <meta name="generator" content={Astro.generator} />
 
+<script is:inline>
+	(() => {
+		const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+		let theme = preferred;
+		try {
+			theme = localStorage.getItem('theme') || preferred;
+		} catch {}
+		document.documentElement.dataset.theme = theme;
+		document.documentElement.style.colorScheme = theme;
+	})();
+</script>
+
 <Font cssVariable="--font-atkinson" preload />
 
 <title>{title}</title>
 <meta name="description" content={description} />
+<meta name="keywords" content={pageKeywords.join(',')} />
 <meta property="og:type" content="website" />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:image" content={new URL('/images/avatar.jpg', Astro.site)} />
 <meta name="twitter:card" content="summary" />
+<meta name="twitter:image" content={new URL('/images/avatar.jpg', Astro.site)} />

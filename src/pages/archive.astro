@@ -1,0 +1,454 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+import { categoryLabel, categoryOf, excerpt, formatDate, isArticle } from '../utils/content.mjs';
+const posts = (await getCollection('blog'))
+	.filter(({ id }) => isArticle(id))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const categories = [...new Set(posts.map(({ id }) => categoryOf(id)))].map((category) => {
+	const entries = posts.filter(({ id }) => categoryOf(id) === category);
+	return { category, label: categoryLabel(entries[0].id, entries[0].filePath), entries };
+});
+const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice(0, 7));
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead
+			title={`文章归档 · ${SITE_TITLE}`}
+			description={`Cao Xin 的 ${posts.length} 篇文章归档。`}
+			keywords={categories.flatMap(({ category, label }) => [category, label])}
+		/>
+	</head>
+	<body>
+		<div class="site-shell">
+			<Header />
+			<main id="main-content" class="archive page-content">
+				<header class="archive-header">
+					<h1>文章归档</h1>
+					<p>共 {posts.length} 篇文章</p>
+				</header>
+
+				<div class="archive-layout">
+					<aside class="archive-sidebar" aria-label="文章筛选">
+						<details data-category-panel>
+							<summary aria-label="分类筛选">
+								<span>分类</span>
+								<svg class="filter-icon" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M4 5h16l-6.5 7.2V18l-3 1v-6.8L4 5Z"></path>
+								</svg>
+							</summary>
+							<div class="category-filters">
+								<button type="button" data-category-filter="all" aria-pressed="true">
+									All <span>{posts.length}</span>
+								</button>
+								{
+									categories.map(({ category, label, entries }) => (
+										<button
+											type="button"
+											data-category-filter={category}
+											aria-pressed="false"
+										>
+											{label} <span>{entries.length}</span>
+										</button>
+									))
+								}
+							</div>
+						</details>
+					</aside>
+
+					<div class="archive-timeline">
+						{
+							[...months].map(([month, entries]) => (
+								<section class="month-group" data-month-group aria-labelledby={`month-${month}`}>
+									<h2 id={`month-${month}`}>{month.replace('-', '.')}</h2>
+									<ol>
+										{entries.map((post) => (
+											<li data-category={categoryOf(post.id)}>
+												<time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate).slice(8)}</time>
+												<div class="archive-copy">
+													<a href={`/blog/${post.id}/`}>{post.data.title}</a>
+													<p>{post.data.description ?? excerpt(post.body)}</p>
+												</div>
+												<span>{categoryLabel(post.id, post.filePath)}</span>
+											</li>
+										))}
+									</ol>
+								</section>
+							))
+						}
+					</div>
+				</div>
+			</main>
+			<Footer />
+		</div>
+	</body>
+</html>
+
+<script>
+	const filters = [...document.querySelectorAll<HTMLButtonElement>('[data-category-filter]')];
+	const entries = [...document.querySelectorAll<HTMLElement>('[data-category]')];
+	const groups = [...document.querySelectorAll<HTMLElement>('[data-month-group]')];
+	const tray = document.querySelector<HTMLElement>('.archive-sidebar');
+	const panel = document.querySelector<HTMLDetailsElement>('[data-category-panel]');
+	const footer = document.querySelector<HTMLElement>('.site-footer');
+	const applyFilter = (category: string) => {
+		filters.forEach((button) => (button.ariaPressed = String(button.dataset.categoryFilter === category)));
+		entries.forEach((entry) => (entry.hidden = category !== 'all' && entry.dataset.category !== category));
+		groups.forEach((group) => (group.hidden = !group.querySelector('[data-category]:not([hidden])')));
+	};
+	const desktop = matchMedia('(min-width: 1100px)');
+	filters.forEach((button) =>
+		button.addEventListener('click', () => {
+			applyFilter(button.dataset.categoryFilter ?? 'all');
+			positionTray();
+			if (!desktop.matches && panel) panel.open = false;
+		}),
+	);
+	applyFilter('all');
+	const syncPanel = ({ matches }: MediaQueryList | MediaQueryListEvent) => {
+		if (panel) panel.open = matches;
+		requestAnimationFrame(positionTray);
+	};
+	syncPanel(desktop);
+	desktop.addEventListener('change', syncPanel);
+	document.addEventListener('pointerdown', (event) => {
+		if (!desktop.matches && panel?.open && event.target instanceof Node && !panel.contains(event.target)) panel.open = false;
+	});
+	function positionTray() {
+		if (!tray) return;
+		if (desktop.matches) {
+			const firstMonth = document.querySelector<HTMLElement>('[data-month-group]:not([hidden]) h2');
+			const centered = (innerHeight - tray.offsetHeight) / 2;
+			tray.style.top = `${Math.max(centered, (firstMonth?.getBoundingClientRect().bottom ?? 0) + 16)}px`;
+			tray.style.transform = 'none';
+			return;
+		}
+		tray.style.removeProperty('top');
+		tray.style.removeProperty('transform');
+		if (footer) tray.style.setProperty('--footer-offset', `${Math.max(0, innerHeight - footer.getBoundingClientRect().top)}px`);
+	};
+	addEventListener('scroll', positionTray, { passive: true });
+	addEventListener('resize', positionTray);
+	positionTray();
+</script>
+
+<style>
+	.archive {
+		padding-top: clamp(4rem, 8vw, 7rem);
+		padding-bottom: clamp(5rem, 10vw, 9rem);
+	}
+
+	.archive-header {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 1rem 2rem;
+		align-items: end;
+		margin-bottom: clamp(3rem, 6vw, 5rem);
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.archive-header h1 {
+		margin: 0;
+		font-family: var(--font-serif);
+		font-size: clamp(2rem, 4vw, 3.25rem);
+		font-weight: 600;
+		letter-spacing: -0.03em;
+		line-height: 1.2;
+	}
+
+	.archive-header p {
+		margin: 0 0 0.35rem;
+		color: var(--muted);
+		font-size: 0.8rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.archive-layout {
+		display: block;
+	}
+
+	.archive-timeline {
+		max-width: 48rem;
+	}
+
+	.archive-sidebar {
+		position: fixed;
+		top: 50%;
+		right: auto;
+		left: calc(50% - min(50%, 540px) + var(--page-gutter) + 50.5rem);
+		z-index: 30;
+		width: 12rem;
+		transform: translateY(-50%);
+	}
+
+	.archive-sidebar details {
+		max-height: calc(100vh - var(--header-height) - 4rem);
+		overflow-y: auto;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		background: var(--surface);
+	}
+
+	.archive-sidebar summary {
+		display: flex;
+		min-height: 48px;
+		align-items: center;
+		padding: 0 1rem;
+		color: var(--text);
+		cursor: pointer;
+		font-family: var(--font-serif);
+		font-weight: 600;
+		list-style: none;
+	}
+
+	.archive-sidebar summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.filter-icon {
+		display: none;
+	}
+
+	.archive-sidebar summary::after {
+		margin-left: auto;
+		color: var(--muted);
+		content: '+';
+		font-family: var(--font-ui);
+		font-weight: 400;
+	}
+
+	.archive-sidebar details[open] summary {
+		border-bottom: 1px solid var(--line);
+	}
+
+	.archive-sidebar details[open] summary::after {
+		content: '−';
+	}
+
+	.category-filters {
+		display: grid;
+		padding: 0.5rem 0.75rem;
+	}
+
+	.category-filters button {
+		display: flex;
+		min-height: 44px;
+		gap: 0.75rem;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 0.25rem;
+		border: 0;
+		background: transparent;
+		color: var(--muted);
+		cursor: pointer;
+		font-size: 0.82rem;
+		text-align: left;
+	}
+
+	.category-filters button:hover,
+	.category-filters button[aria-pressed='true'] {
+		color: var(--accent);
+	}
+
+	.category-filters button[aria-pressed='true'] {
+		font-weight: 700;
+	}
+
+	.category-filters span {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.month-group + .month-group {
+		margin-top: 4rem;
+	}
+
+	.month-group h2 {
+		margin: 0 0 1rem;
+		color: var(--accent);
+		font-family: var(--font-serif);
+		font-size: 1.4rem;
+		font-weight: 600;
+	}
+
+	.month-group ol {
+		margin: 0;
+		padding: 0;
+		border-top: 1px solid var(--line);
+		list-style: none;
+	}
+
+	.month-group li {
+		display: grid;
+		grid-template-columns: 2.5rem minmax(0, 1fr) 6rem;
+		gap: 1.5rem;
+		align-items: start;
+		padding: 1rem 0;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.month-group time,
+	.month-group li > span {
+		padding-top: 0.2rem;
+		color: var(--muted);
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.month-group li > span {
+		color: var(--accent);
+		text-align: right;
+	}
+
+	.archive-copy a {
+		color: var(--text);
+		font-family: var(--font-serif);
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.4;
+		text-decoration: none;
+	}
+
+	.archive-copy a:hover {
+		color: var(--accent);
+	}
+
+	.archive-copy p {
+		display: -webkit-box;
+		margin: 0.35rem 0 0;
+		overflow: hidden;
+		color: var(--muted);
+		font-size: 0.85rem;
+		line-height: 1.6;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	@media (max-width: 720px) {
+		.archive {
+			padding-top: 3.5rem;
+		}
+
+		.archive-header {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+			align-items: start;
+		}
+
+		.archive-header p {
+			margin: 0;
+		}
+
+		.month-group li {
+			grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+			gap: 0.25rem 1rem;
+		}
+
+		.month-group li > span {
+			grid-column: 3;
+			grid-row: 1;
+		}
+
+		.archive-copy {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+	}
+
+	@media (max-width: 1099px) {
+		.archive-sidebar {
+			top: auto;
+			right: auto;
+			bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
+			left: calc(50% - 26px);
+			width: 52px;
+			transform: none;
+		}
+
+		.archive-sidebar:has(details[open])::before {
+			position: fixed;
+			z-index: 0;
+			background: color-mix(in srgb, var(--canvas) 72%, transparent);
+			content: '';
+			inset: 0;
+		}
+
+		.archive-sidebar details {
+			position: relative;
+			z-index: 1;
+			max-height: none;
+			overflow: visible;
+			border: 0;
+			background: transparent;
+			box-shadow: none;
+		}
+
+		.archive-sidebar summary {
+			width: 52px;
+			min-height: 52px;
+			justify-content: center;
+			padding: 0;
+			border: 1px solid var(--line);
+			border-radius: 50%;
+			background: var(--surface);
+			color: var(--text);
+			box-shadow: var(--shadow);
+		}
+
+		.archive-sidebar details[open] summary {
+			border-bottom: 1px solid var(--line);
+		}
+
+		.archive-sidebar summary span,
+		.archive-sidebar summary::after {
+			display: none;
+		}
+
+		.filter-icon {
+			display: block;
+			width: 20px;
+			height: 20px;
+			fill: none;
+			stroke: currentColor;
+			stroke-linejoin: round;
+			stroke-width: 1.6;
+		}
+
+		.category-filters {
+			position: fixed;
+			top: 50%;
+			right: auto;
+			bottom: auto;
+			left: 50%;
+			grid-template-columns: 1fr;
+			width: min(20rem, calc(100vw - 2rem));
+			max-height: calc(100svh - 4rem);
+			padding: 0.5rem 0.75rem;
+			overflow-y: auto;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface);
+			box-shadow: var(--shadow);
+			transform: translate(-50%, -50%);
+		}
+
+		.category-filters {
+			gap: 0 1rem;
+		}
+
+		.category-filters button:hover,
+		.category-filters button[aria-pressed='true'] {
+			color: var(--text);
+		}
+
+		.category-filters button[aria-pressed='true'] {
+			text-decoration: underline;
+			text-underline-offset: 0.25em;
+		}
+	}
+</style>
