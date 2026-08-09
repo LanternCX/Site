@@ -10,7 +10,8 @@ import remarkObsidian from './src/plugins/remark-obsidian.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://example.com',
+	site: 'https://www.caoxin.xyz',
+	devToolbar: { enabled: false },
 	integrations: [mdx(), sitemap()],
 	markdown: {
 		processor: unified({
