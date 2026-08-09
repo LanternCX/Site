@@ -277,8 +277,8 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	}
 
 	.month-group ol {
-		margin: 0;
-		padding: 0;
+		margin: 0 -1rem;
+		padding: 0 1rem;
 		border-top: 1px solid var(--line);
 		list-style: none;
 	}
@@ -363,6 +363,11 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 			gap: 0.25rem 1rem;
 			margin: 0 -0.75rem;
 			padding: 1rem 0.75rem;
+		}
+
+		.month-group ol {
+			margin: 0 -0.75rem;
+			padding: 0 0.75rem;
 		}
 
 		.month-group li > span {
