@@ -289,8 +289,15 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 		grid-template-columns: 2.5rem minmax(0, 1fr) 6rem;
 		gap: 1.5rem;
 		align-items: start;
-		padding: 1rem 0;
+		margin: 0 -1rem;
+		padding: 1rem;
 		border-bottom: 1px solid var(--line);
+		transition: background-color 160ms ease;
+	}
+
+	.month-group li:hover,
+	.month-group li:focus-within {
+		background: var(--accent-soft);
 	}
 
 	.month-group time,
@@ -354,6 +361,8 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 		.month-group li {
 			grid-template-columns: 2.5rem minmax(0, 1fr) auto;
 			gap: 0.25rem 1rem;
+			margin: 0 -0.75rem;
+			padding: 1rem 0.75rem;
 		}
 
 		.month-group li > span {
