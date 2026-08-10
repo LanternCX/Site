@@ -12,15 +12,6 @@ This document defines the long-term visual and interaction baseline for the blog
 - Decoration must serve the content. Avoid gradients, glows, glass effects, simulated paper, and purposeless motion.
 - Keep the hierarchy equivalent across light and dark themes. Dark mode is not a separate product.
 
-## Reference Material
-
-Temporary reference images are stored at:
-
-- `docs/references/blog-theme-light.png`
-- `docs/references/blog-theme-dark.png`
-
-The images establish direction, not pixel-level requirements. When they conflict, follow this document, the real content, and accessibility needs.
-
 ## Color
 
 Use semantic variables throughout the interface. Components must not contain theme-specific color literals.
