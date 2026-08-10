@@ -1,0 +1,4 @@
+interface:
+  display_name: "Using Rules"
+  short_description: "Apply this blog’s design rules consistently"
+  default_prompt: "Use $using-rules to implement or review this blog interface."

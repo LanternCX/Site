@@ -1,34 +1,507 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
 import 'katex/dist/katex.min.css';
 import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+import { formatDate, outlineItems } from '../utils/content.mjs';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props {
+	title: string;
+	description?: string;
+	pubDate: Date;
+	updatedDate?: Date;
+	category: string;
+	categoryName: string;
+	contentHeading?: string;
+	headings?: MarkdownHeading[];
+}
 
-const { title, description, pubDate, updatedDate } = Astro.props;
+const { title, description, pubDate, updatedDate, category, categoryName, contentHeading, headings = [] } = Astro.props;
+const duplicateContentTitle = contentHeading === title;
+const outline = outlineItems(headings, duplicateContentTitle ? title : undefined);
 ---
 
 <!doctype html>
 <html lang="zh-CN">
 	<head>
-		<BaseHead title={title} description={description ?? ''} />
+		<BaseHead title={`${title} · ${SITE_TITLE}`} description={description ?? title} keywords={[category, categoryName]} />
 	</head>
 	<body>
-		<Header />
-		<main>
-			<article>
-				<header class="article-header">
-					<h1>{title}</h1>
-					<p>
-						<time datetime={pubDate.toISOString()}>{pubDate.toLocaleDateString('zh-CN')}</time>
-						{updatedDate && <> · 更新于 {updatedDate.toLocaleDateString('zh-CN')}</>}
-					</p>
-				</header>
-				<div class="prose">
-					<slot />
-				</div>
-			</article>
-		</main>
+		<div class="site-shell">
+			<Header />
+			<main id="main-content" class="page-content article-page">
+				<article class:list={{ 'duplicate-content-title': duplicateContentTitle }}>
+					<header class="article-header">
+						<p class="article-kicker">{categoryName}</p>
+						<h1>{title}</h1>
+						{description && <p class="article-description">{description}</p>}
+						<p class="article-meta">
+							<span>发布于 <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time></span>
+							{updatedDate && <span>更新于 <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time></span>}
+						</p>
+					</header>
+					<div class="prose">
+						<slot />
+					</div>
+				</article>
+				<a class="text-link article-back" href="/archive/">返回文章归档</a>
+			</main>
+			{
+				outline.length > 1 && (
+					<>
+						<button
+							class="outline-island"
+							type="button"
+							aria-haspopup="dialog"
+							aria-controls="article-outline"
+							data-outline-open
+						>
+							<span class="outline-path">
+								<span class="outline-ancestors" data-outline-ancestors></span>
+								<span class="outline-current" data-outline-current>{outline[0].text}</span>
+							</span>
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M9 7h10M9 12h7M9 17h10" /></svg>
+						</button>
+
+						<aside class="outline-sidebar" aria-label="文章目录" data-outline-sidebar>
+							<p>文章目录</p>
+							<nav>
+								<ol>
+									{outline.map(({ depth, slug, text }) => (
+										<li data-depth={depth}>
+											<a href={`#${slug}`} data-outline-link data-depth={depth}>{text}</a>
+										</li>
+									))}
+								</ol>
+							</nav>
+						</aside>
+
+						<dialog id="article-outline" class="outline-dialog" aria-labelledby="outline-title" data-outline-dialog>
+							<header class="outline-header">
+								<div>
+									<p>阅读路径</p>
+									<h2 id="outline-title">文章目录</h2>
+								</div>
+								<form method="dialog">
+									<button type="submit" aria-label="关闭目录">
+										<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+									</button>
+								</form>
+							</header>
+							<nav aria-label="文章目录">
+								<ol>
+									{outline.map(({ depth, slug, text, path }) => (
+										<li data-depth={depth}>
+											<a href={`#${slug}`} data-outline-link data-depth={depth} data-path={path}>{text}</a>
+										</li>
+									))}
+								</ol>
+							</nav>
+						</dialog>
+					</>
+				)
+			}
+			<Footer />
+		</div>
 	</body>
 </html>
+
+<script>
+	const opener = document.querySelector<HTMLButtonElement>('[data-outline-open]');
+	const dialog = document.querySelector<HTMLDialogElement>('[data-outline-dialog]');
+	const ancestors = document.querySelector<HTMLElement>('[data-outline-ancestors]');
+	const current = document.querySelector<HTMLElement>('[data-outline-current]');
+	const dialogLinks = [...(dialog?.querySelectorAll<HTMLAnchorElement>('[data-outline-link]') ?? [])];
+	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-outline-link]')];
+	const sidebar = document.querySelector<HTMLElement>('[data-outline-sidebar]');
+	const articleHeader = document.querySelector<HTMLElement>('.article-header');
+	const desktopOutline = matchMedia('(min-width: 1220px)');
+	const sections = dialogLinks.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))));
+	const footer = document.querySelector<HTMLElement>('.site-footer');
+	let positions: number[] = [];
+	let frame = 0;
+	let currentIndex = -1;
+
+	const measure = () => {
+		positions = sections.map((section) => (section?.getBoundingClientRect().top ?? 0) + scrollY);
+		sync();
+	};
+	const sync = () => {
+		cancelAnimationFrame(frame);
+		frame = requestAnimationFrame(() => {
+			const threshold = scrollY + (document.querySelector<HTMLElement>('.site-header')?.offsetHeight ?? 0) + 32;
+			// ponytail: article outlines stay small enough for a linear scan; index offsets if they ever reach thousands of entries.
+			const index = Math.max(0, positions.findLastIndex((top) => top <= threshold));
+			const currentHash = dialogLinks[index]?.hash;
+			links.forEach((link) => {
+				if (link.hash === currentHash) link.setAttribute('aria-current', 'location');
+				else link.removeAttribute('aria-current');
+			});
+			const parts = (dialogLinks[index]?.dataset.path ?? '').split(' › ');
+			if (current) current.textContent = parts.pop() ?? '';
+			if (ancestors) ancestors.textContent = parts.join(' › ');
+			if (opener) opener.title = dialogLinks[index]?.dataset.path ?? '';
+			if (opener && footer) opener.style.setProperty('--footer-offset', `${Math.max(0, innerHeight - footer.getBoundingClientRect().top)}px`);
+			if (sidebar && desktopOutline.matches) {
+				const maxHeight = Math.min(576, innerHeight - (document.querySelector<HTMLElement>('.site-header')?.offsetHeight ?? 0) - 32);
+				const centered = (innerHeight - maxHeight) / 2;
+				const aligned = articleHeader?.getBoundingClientRect().bottom ?? 0;
+				const top = Math.max(centered, aligned);
+				sidebar.style.top = `${top}px`;
+				sidebar.style.transform = 'none';
+				sidebar.style.setProperty('--outline-height', `${Math.min(maxHeight, innerHeight - top - 16)}px`);
+			} else if (sidebar) {
+				sidebar.style.removeProperty('top');
+				sidebar.style.removeProperty('transform');
+				sidebar.style.removeProperty('--outline-height');
+			}
+			if (index !== currentIndex) sidebar?.querySelector<HTMLAnchorElement>('[aria-current]')?.scrollIntoView({ block: 'nearest' });
+			currentIndex = index;
+		});
+	};
+
+	opener?.addEventListener('click', () => {
+		dialog?.showModal();
+		dialogLinks.find((link) => link.hasAttribute('aria-current'))?.focus();
+	});
+	dialog?.addEventListener('click', (event) => {
+		if (event.target === dialog) dialog.close();
+	});
+	dialogLinks.forEach((link) => link.addEventListener('click', () => dialog?.close()));
+	addEventListener('scroll', sync, { passive: true });
+	addEventListener('resize', measure);
+	addEventListener('load', measure);
+	desktopOutline.addEventListener('change', measure);
+	measure();
+</script>
+
+<style>
+	.duplicate-content-title :global(.prose > h2:first-of-type) {
+		display: none;
+	}
+
+	.article-back {
+		margin-top: 5rem;
+	}
+
+	:global(.prose h2),
+	:global(.prose h3),
+	:global(.prose h4) {
+		scroll-margin-top: calc(var(--header-height) + 1.5rem);
+	}
+
+	.outline-island {
+		position: fixed;
+		right: 50%;
+		bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
+		z-index: 40;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		width: max-content;
+		max-width: calc(100vw - 2rem);
+		min-height: 44px;
+		gap: 0.5rem;
+		align-items: center;
+		padding: 0 0.75rem 0 1rem;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--surface) 94%, transparent);
+		box-shadow: var(--shadow);
+		color: var(--text);
+		cursor: pointer;
+		transform: translateX(50%);
+		backdrop-filter: blur(12px);
+	}
+
+	.outline-island:hover {
+		color: var(--accent);
+	}
+
+	.outline-island svg,
+	.outline-header button svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: currentColor;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 1.75;
+	}
+
+	.outline-path {
+		display: flex;
+		min-width: 0;
+		font-family: var(--font-serif);
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-align: left;
+	}
+
+	.outline-ancestors,
+	.outline-current {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.outline-ancestors:not(:empty) {
+		flex: 1 1 auto;
+		color: var(--muted);
+		font-weight: 400;
+	}
+
+	.outline-ancestors:not(:empty)::after {
+		color: var(--muted);
+		content: ' ›\00a0';
+	}
+
+	.outline-ancestors:not(:empty) + .outline-current {
+		flex: 0 1 auto;
+		max-width: 62%;
+	}
+
+	.outline-dialog {
+		width: min(20rem, calc(100vw - 2rem));
+		max-width: none;
+		max-height: min(70svh, 36rem);
+		margin: auto;
+		padding: 0;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: var(--shadow);
+	}
+
+	.outline-sidebar {
+		display: none;
+	}
+
+	.outline-dialog[open] {
+		animation: outline-enter 160ms ease-out;
+	}
+
+	.outline-dialog::backdrop {
+		background: color-mix(in srgb, var(--canvas) 72%, transparent);
+		backdrop-filter: blur(3px);
+	}
+
+	.outline-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.outline-header h2,
+	.outline-header p {
+		margin: 0;
+	}
+
+	.outline-header h2 {
+		font-family: var(--font-serif);
+		font-size: 1.45rem;
+		font-weight: 600;
+	}
+
+	.outline-header p {
+		color: var(--accent);
+		font-size: 0.75rem;
+	}
+
+	.outline-header button {
+		display: grid;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		place-items: center;
+		border: 0;
+		background: transparent;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.outline-dialog nav {
+		max-height: calc(min(70svh, 36rem) - 94px);
+		padding: 0.5rem 1rem max(1rem, env(safe-area-inset-bottom));
+		overflow-x: hidden;
+		overflow-y: auto;
+		scrollbar-color: var(--line) transparent;
+		scrollbar-width: thin;
+	}
+
+	.outline-dialog nav::-webkit-scrollbar,
+	.outline-sidebar nav::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.outline-dialog nav::-webkit-scrollbar-track,
+	.outline-sidebar nav::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.outline-dialog nav::-webkit-scrollbar-thumb,
+	.outline-sidebar nav::-webkit-scrollbar-thumb {
+		border-radius: 999px;
+		background: var(--line);
+	}
+
+	.outline-dialog ol,
+	.outline-sidebar ol {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.outline-dialog a,
+	.outline-sidebar a {
+		display: flex;
+		min-height: 44px;
+		align-items: center;
+		padding: 0.6rem 0.5rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+		line-height: 1.45;
+		text-decoration: none;
+	}
+
+	.outline-dialog li[data-depth='2'] a,
+	.outline-sidebar li[data-depth='2'] a {
+		color: var(--text);
+		font-family: var(--font-serif);
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.outline-dialog li[data-depth='3'] a,
+	.outline-sidebar li[data-depth='3'] a {
+		padding-left: 1.5rem;
+	}
+
+	.outline-dialog li[data-depth='4'] a,
+	.outline-sidebar li[data-depth='4'] a {
+		padding-left: 2.75rem;
+		font-size: 0.84rem;
+	}
+
+	.outline-dialog a:hover,
+	.outline-dialog a[aria-current] {
+		background: var(--accent-soft);
+		color: var(--accent);
+	}
+
+	.outline-dialog a[aria-current] {
+		font-weight: 700;
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+
+	:global(body:has(.outline-dialog[open])) {
+		overflow: hidden;
+	}
+
+	@keyframes outline-enter {
+		from {
+			transform: translateY(0.75rem) scale(0.98);
+			opacity: 0;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.outline-island {
+			bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
+			max-width: calc(100vw - 1.5rem);
+		}
+
+		.outline-dialog {
+			width: min(20rem, calc(100vw - 2rem));
+			max-height: min(70svh, 36rem);
+		}
+
+		.outline-dialog nav {
+			max-height: calc(min(70svh, 36rem) - 94px);
+		}
+	}
+
+	@media (min-width: 1220px) {
+		.outline-island {
+			display: none;
+		}
+
+		.outline-sidebar {
+			position: fixed;
+			top: calc((100dvh + var(--header-height)) / 2);
+			left: calc(50% - 460px + var(--page-gutter) + 51.5rem);
+			z-index: 30;
+			display: block;
+			width: 12rem;
+			max-height: var(--outline-height, min(36rem, calc(100dvh - var(--header-height) - 2rem)));
+			overflow: hidden;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface);
+			transform: translateY(-50%);
+		}
+
+		.outline-sidebar > p {
+			min-height: 48px;
+			margin: 0;
+			padding: 0 0.9rem;
+			border-bottom: 1px solid var(--line);
+			color: var(--text);
+			font-family: var(--font-serif);
+			font-size: 0.9rem;
+			font-weight: 600;
+			line-height: 48px;
+		}
+
+		.outline-sidebar nav {
+			max-height: calc(var(--outline-height, min(36rem, calc(100dvh - var(--header-height) - 2rem))) - 49px);
+			padding: 0.5rem;
+			overflow-x: hidden;
+			overflow-y: auto;
+			scrollbar-color: var(--line) transparent;
+			scrollbar-width: thin;
+		}
+
+		.outline-sidebar a {
+			padding-right: 0.4rem;
+			padding-left: 0.4rem;
+			font-size: 0.8rem;
+		}
+
+		.outline-sidebar li[data-depth='2'] a {
+			font-size: 0.86rem;
+		}
+
+		.outline-sidebar li[data-depth='3'] a {
+			padding-left: 1rem;
+		}
+
+		.outline-sidebar li[data-depth='4'] a {
+			padding-left: 1.6rem;
+			font-size: 0.76rem;
+		}
+
+		.outline-sidebar a:hover,
+		.outline-sidebar a[aria-current] {
+			color: var(--accent);
+		}
+
+		.outline-sidebar a[aria-current] {
+			background: var(--accent-soft);
+			font-weight: 700;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.outline-dialog[open] {
+			animation: none;
+		}
+	}
+</style>

@@ -1,0 +1,64 @@
+---
+import { SITE_AUTHOR } from '../consts';
+---
+
+<footer class="site-footer">
+	<p>© 2024-2026 {SITE_AUTHOR}</p>
+	<p class="footer-note">Made with love.</p>
+	<nav aria-label="其他链接">
+		<a href="/rss.xml">RSS</a>
+		<a href="mailto:caoxin@xysu.tech">Email</a>
+	</nav>
+</footer>
+
+<style>
+	.site-footer {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		min-height: 72px;
+		padding: 1rem var(--page-gutter);
+		border-top: 1px solid var(--line);
+		color: var(--muted);
+		font-size: 0.75rem;
+	}
+
+	.site-footer p {
+		margin: 0;
+	}
+
+	.footer-note {
+		font-family: var(--font-serif);
+		font-size: 0.875rem;
+		font-style: italic;
+		letter-spacing: 0.02em;
+	}
+
+	.site-footer nav {
+		display: flex;
+		justify-content: flex-end;
+		gap: 1rem;
+	}
+
+	.site-footer a {
+		color: inherit;
+		text-underline-offset: 0.2em;
+	}
+
+	.site-footer a:hover {
+		color: var(--accent);
+	}
+
+	@media (max-width: 720px) {
+		.site-footer {
+			grid-template-columns: 1fr auto;
+			gap: 0.5rem 1rem;
+		}
+
+		.footer-note {
+			grid-column: 1 / -1;
+			grid-row: 2;
+			text-align: center;
+		}
+	}
+</style>

@@ -1,63 +1,46 @@
-# Astro Starter Kit: Blog
+# Cao Xin 的小站
 
-```sh
-npm create astro@latest -- --template blog
-```
+基于 Astro 的个人博客。博客内容、固定页面和发布所需的静态资源统一保存在本仓库中。
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 内容结构
 
-Features:
-
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+`src/content/blog` 可以直接作为 Obsidian Vault 使用。博客目录遵循以下约定：
 
 ```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+src/content/blog/
+└── Note/                 # 一级目录：分类
+    ├── OS.md             # 没有资源的普通文章
+    └── DB/               # 带资源的文章包
+        ├── DB.md
+        └── assets/
+            └── overview.svg
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+- 没有本地资源的文章直接放在分类目录中。
+- 带资源的文章使用同名目录打包，目录可以位于分类下的任意深度。
+- 文章包只包含一篇与所在目录同名的 Markdown 或 MDX 入口文章。
+- 文章通过 `./assets/文件名` 引用自己的资源。
+- About、Friends 等固定页面位于 `src/content/pages`，不参与博客分类。
+- 本地 Markdown 图片由 Astro 在构建时优化并打包，不需要手动上传图床。
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## 开发
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+```sh
+npm install
+npm run astro -- dev --background
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+后台开发服务器可以通过以下命令管理：
 
-## 🧞 Commands
+```sh
+npm run astro -- dev status
+npm run astro -- dev logs
+npm run astro -- dev stop
+```
 
-All commands are run from the root of the project, from a terminal:
+## 验证
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+```sh
+npm test
+npm run build
+```
