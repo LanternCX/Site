@@ -5,10 +5,12 @@ import { categoryLabel, firstHeading } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
+	return posts
+		.filter(({ id }) => !/(^|\/)pages\/friends$/i.test(id))
+		.map((post) => ({
+			params: { slug: post.id },
+			props: post,
+		}));
 }
 type Props = CollectionEntry<'blog'>;
 

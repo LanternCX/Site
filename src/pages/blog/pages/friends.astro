@@ -1,0 +1,206 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import { SITE_TITLE } from '../../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead
+			title={`友链 · ${SITE_TITLE}`}
+			description="Cao Xin 的朋友们，以及友链互换方式。"
+			keywords={['友链', '朋友', 'Link Exchange']}
+		/>
+	</head>
+	<body>
+		<div class="site-shell">
+			<Header />
+			<main id="main-content" class="friends-page page-content">
+				<header class="friends-header">
+					<p>FRIENDS</p>
+					<h1>友链</h1>
+				</header>
+
+				<section class="exchange" aria-labelledby="exchange-title">
+					<div>
+						<p class="section-label">LINK EXCHANGE</p>
+						<h2 id="exchange-title">互换友链</h2>
+					</div>
+					<div class="exchange-copy">
+						<p>欢迎留下你的博客地址、头像地址和展示名称，审核后会尽快添加。</p>
+						<p>Please leave your blog URL, avatar URL, and display name. I’ll add it after review.</p>
+						<p class="example">
+							示例：<code>https://caoxin.xyz, avatar URL, Cao Xin's Blog</code>
+						</p>
+					</div>
+				</section>
+
+				<section class="friend-list" aria-labelledby="friend-list-title">
+					<h2 id="friend-list-title" class="section-heading">朋友们</h2>
+					<div class="friends-grid">
+						<a class="friend" href="https://amiracle.site" target="_blank" rel="noopener noreferrer">
+							<img src="https://cdn.amiracle.site/avatar_n.jpg" alt="Amiracle 的头像" width="72" height="72" />
+							<span>
+								<strong>Amiracle</strong>
+								<small>向往之处，便是归途</small>
+							</span>
+							<span class="visit" aria-hidden="true">↗</span>
+						</a>
+					</div>
+				</section>
+			</main>
+			<Footer />
+		</div>
+	</body>
+</html>
+
+<style>
+	.friends-page {
+		padding-top: clamp(4rem, 8vw, 7rem);
+		padding-bottom: clamp(5rem, 10vw, 9rem);
+	}
+
+	.friends-header {
+		max-width: 48rem;
+		margin-bottom: clamp(4rem, 9vw, 7rem);
+	}
+
+	.friends-header > p:first-child,
+	.section-label {
+		margin: 0 0 1rem;
+		color: var(--accent);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+	}
+
+	.friends-header h1 {
+		margin: 0;
+		font-family: var(--font-serif);
+		font-size: clamp(2.5rem, 6vw, 4.5rem);
+		font-weight: 600;
+		letter-spacing: -0.04em;
+		line-height: 1.15;
+	}
+
+	.exchange {
+		display: grid;
+		grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+		gap: 3rem;
+		padding: 2.5rem 0;
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+	}
+
+	.exchange h2 {
+		margin: 0;
+		font-family: var(--font-serif);
+		font-size: 1.65rem;
+		font-weight: 600;
+	}
+
+	.exchange-copy p {
+		margin: 0;
+	}
+
+	.exchange-copy p + p {
+		margin-top: 0.75rem;
+	}
+
+	.exchange-copy .example {
+		margin-top: 1.5rem;
+		color: var(--muted);
+		font-size: 0.875rem;
+	}
+
+	.example code {
+		padding: 0.15em 0.35em;
+		background: var(--code-surface);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		overflow-wrap: anywhere;
+	}
+
+	.friend-list {
+		margin-top: clamp(4rem, 8vw, 6rem);
+	}
+
+	.friends-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 19rem));
+		justify-content: center;
+		gap: 1.5rem;
+		margin-top: 2.5rem;
+	}
+
+	.friend {
+		display: grid;
+		grid-template-columns: 72px minmax(0, 1fr) auto;
+		gap: 1.25rem;
+		align-items: center;
+		min-height: 132px;
+		padding: 1.5rem 0;
+		border-block: 1px solid var(--line);
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	.friend:hover strong,
+	.friend:focus-visible strong,
+	.friend:hover .visit,
+	.friend:focus-visible .visit {
+		color: var(--accent);
+	}
+
+	.friend img {
+		width: 72px;
+		height: 72px;
+		border: 1px solid var(--line);
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.friend strong,
+	.friend small {
+		display: block;
+	}
+
+	.friend strong {
+		font-family: var(--font-serif);
+		font-size: 1.15rem;
+		font-weight: 600;
+	}
+
+	.friend small {
+		margin-top: 0.25rem;
+		color: var(--muted);
+		font-size: 0.82rem;
+	}
+
+	.visit {
+		color: var(--muted);
+		font-size: 1.1rem;
+	}
+
+	@media (max-width: 720px) {
+		.friends-page {
+			padding-top: 3.5rem;
+		}
+
+		.exchange {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+
+		.friend {
+			grid-template-columns: 64px minmax(0, 1fr) auto;
+			min-height: 116px;
+		}
+
+		.friend img {
+			width: 64px;
+			height: 64px;
+		}
+	}
+</style>
