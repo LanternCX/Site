@@ -37,13 +37,14 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 					<aside class="archive-sidebar" aria-label="文章筛选">
 						<details data-category-panel>
 							<summary aria-label="分类筛选">
-								<span>分类</span>
+								<span class="desktop-category-label">分类</span>
+								<span data-current-category>All</span>
 								<svg class="filter-icon" viewBox="0 0 24 24" aria-hidden="true">
 									<path d="M4 5h16l-6.5 7.2V18l-3 1v-6.8L4 5Z"></path>
 								</svg>
 							</summary>
 							<div class="category-filters">
-								<button type="button" data-category-filter="all" aria-pressed="true">
+								<button type="button" data-category-filter="all" data-category-label="All" aria-pressed="true">
 									All <span>{posts.length}</span>
 								</button>
 								{
@@ -51,6 +52,7 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 										<button
 											type="button"
 											data-category-filter={category}
+											data-category-label={label}
 											aria-pressed="false"
 										>
 											{label} <span>{entries.length}</span>
@@ -95,11 +97,15 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	const groups = [...document.querySelectorAll<HTMLElement>('[data-month-group]')];
 	const tray = document.querySelector<HTMLElement>('.archive-sidebar');
 	const panel = document.querySelector<HTMLDetailsElement>('[data-category-panel]');
+	const currentCategory = document.querySelector<HTMLElement>('[data-current-category]');
 	const footer = document.querySelector<HTMLElement>('.site-footer');
 	const applyFilter = (category: string) => {
 		filters.forEach((button) => (button.ariaPressed = String(button.dataset.categoryFilter === category)));
 		entries.forEach((entry) => (entry.hidden = category !== 'all' && entry.dataset.category !== category));
 		groups.forEach((group) => (group.hidden = !group.querySelector('[data-category]:not([hidden])')));
+		const label = filters.find((button) => button.dataset.categoryFilter === category)?.dataset.categoryLabel ?? 'All';
+		if (currentCategory) currentCategory.textContent = label;
+		if (panel) panel.querySelector('summary')?.setAttribute('aria-label', `分类筛选，当前：${label}`);
 	};
 	const desktop = matchMedia('(min-width: 1100px)');
 	filters.forEach((button) =>
@@ -219,6 +225,10 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	}
 
 	.archive-sidebar summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.archive-sidebar [data-current-category] {
 		display: none;
 	}
 
@@ -413,10 +423,12 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	@media (max-width: 1099px) {
 		.archive-sidebar {
 			top: auto;
-			right: auto;
+			right: 0;
 			bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
-			left: calc(50% - 26px);
-			width: 52px;
+			left: 0;
+			width: max-content;
+			max-width: calc(100vw - 2rem);
+			margin-inline: auto;
 			transform: none;
 		}
 
@@ -424,6 +436,7 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 			position: fixed;
 			z-index: 0;
 			background: color-mix(in srgb, var(--canvas) 72%, transparent);
+			backdrop-filter: blur(3px);
 			content: '';
 			inset: 0;
 		}
@@ -439,24 +452,41 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 		}
 
 		.archive-sidebar summary {
-			width: 52px;
-			min-height: 52px;
-			justify-content: center;
-			padding: 0;
+			width: max-content;
+			max-width: calc(100vw - 2rem);
+			min-height: 44px;
+			gap: 0.5rem;
+			padding: 0 0.75rem 0 1rem;
 			border: 1px solid var(--line);
-			border-radius: 50%;
-			background: var(--surface);
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--surface) 94%, transparent);
 			color: var(--text);
+			font-size: 0.9rem;
 			box-shadow: var(--shadow);
+			backdrop-filter: blur(12px);
 		}
 
 		.archive-sidebar details[open] summary {
 			border-bottom: 1px solid var(--line);
 		}
 
-		.archive-sidebar summary span,
 		.archive-sidebar summary::after {
 			display: none;
+		}
+
+		.archive-sidebar summary span {
+			max-width: calc(100vw - 5.5rem);
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.archive-sidebar .desktop-category-label {
+			display: none;
+		}
+
+		.archive-sidebar [data-current-category] {
+			display: block;
 		}
 
 		.filter-icon {
@@ -477,8 +507,8 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 			left: 50%;
 			grid-template-columns: 1fr;
 			width: min(20rem, calc(100vw - 2rem));
-			max-height: calc(100svh - 4rem);
-			padding: 0.5rem 0.75rem;
+			max-height: min(70svh, 36rem);
+			padding: 0.5rem 1rem max(1rem, env(safe-area-inset-bottom));
 			overflow-y: auto;
 			border: 1px solid var(--line);
 			border-radius: 8px;
@@ -493,12 +523,37 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 
 		.category-filters button:hover,
 		.category-filters button[aria-pressed='true'] {
-			color: var(--text);
+			background: var(--accent-soft);
+			color: var(--accent);
+		}
+
+		.category-filters button {
+			padding: 0.6rem 0.5rem;
+			font-family: var(--font-serif);
+			font-size: 1rem;
+			font-weight: 600;
+			line-height: 1.45;
 		}
 
 		.category-filters button[aria-pressed='true'] {
+			font-weight: 700;
 			text-decoration: underline;
 			text-underline-offset: 0.25em;
+		}
+
+		:global(body:has([data-category-panel][open])) {
+			overflow: hidden;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.archive-sidebar {
+			bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
+			max-width: calc(100vw - 1.5rem);
+		}
+
+		.archive-sidebar summary {
+			max-width: calc(100vw - 1.5rem);
 		}
 	}
 </style>

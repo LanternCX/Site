@@ -13,13 +13,12 @@ const friends = pages.find(({ id }) => id === 'friends');
 const path = Astro.url.pathname;
 const nav = [
 	{ label: '首页', href: '/', current: path === '/' || /^\/page\/\d+\/?$/.test(path) },
-	{ label: '分类', href: '/archive/', current: path === '/archive/' },
+	{ label: '归档', href: '/archive/', current: path === '/archive/' },
 	{ label: '友链', href: friends ? `/blog/pages/${friends.id}/` : '/', current: /\/pages\/friends\/?$/i.test(path) },
 	{ label: '关于', href: about ? `/blog/pages/${about.id}/` : '/#about', current: /\/pages\/about\/?$/i.test(path) },
 ];
 ---
 
-<a class="skip-link" href="#main-content">跳到主要内容</a>
 <header class="site-header">
 	<nav class="nav-bar" aria-label="主要导航">
 		<a class="brand" href="/" aria-label={`${SITE_BRAND} 首页`}>{SITE_BRAND}</a>
