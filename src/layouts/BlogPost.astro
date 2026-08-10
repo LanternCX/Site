@@ -46,7 +46,6 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 						<slot />
 					</div>
 				</article>
-				<a class="text-link article-back" href="/archive/">返回文章归档</a>
 			</main>
 			{
 				outline.length > 1 && (
@@ -180,10 +179,6 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 <style>
 	.duplicate-content-title :global(.prose > h2:first-of-type) {
 		display: none;
-	}
-
-	.article-back {
-		margin-top: 5rem;
 	}
 
 	:global(.prose h2),
