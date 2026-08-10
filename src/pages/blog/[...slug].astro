@@ -15,7 +15,7 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<'blog'>;
 
 const post = Astro.props;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
 ---
 
 <BlogPost
@@ -23,6 +23,7 @@ const { Content } = await render(post);
 	category={post.id.split('/')[0]}
 	categoryName={categoryLabel(post.id, post.filePath)}
 	contentHeading={firstHeading(post.body)}
+	headings={/(^|\/)pages\/about$/i.test(post.id) ? [] : headings}
 >
 	<Content />
 </BlogPost>

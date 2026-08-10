@@ -4,6 +4,17 @@ export const categoryLabel = (id, filePath) =>
 export const categoryAnchor = (category) => `category-${category.toLowerCase().replaceAll(' ', '-')}`;
 export const formatDate = (date) => date.toISOString().slice(0, 10).replaceAll('-', '.');
 export const firstHeading = (body) => body.match(/^#\s+(.+)$/m)?.[1].replace(/\*\*|__|`/g, '').trim();
+export const outlineItems = (headings, title) => {
+	const levels = [];
+	return headings
+		.filter(({ depth }) => depth >= 2 && depth <= 4)
+		.filter(({ text }, index) => index > 0 || text !== title)
+		.map((heading) => {
+			levels[heading.depth - 2] = heading.text;
+			levels.length = heading.depth - 1;
+			return { ...heading, path: levels.filter(Boolean).join(' › ') };
+		});
+};
 export const excerpt = (body, maxLength = 110) => {
 	const plain = body
 		.replace(/^---[\s\S]*?---\s*/, '')
