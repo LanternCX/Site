@@ -25,7 +25,7 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 		/>
 	</head>
 	<body>
-		<div class="site-shell">
+		<div class="site-shell archive-shell">
 			<Header />
 			<main id="main-content" class="archive page-content">
 				<header class="archive-header">
@@ -123,13 +123,18 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 		if (!tray) return;
 		if (desktop.matches) {
 			const firstMonth = document.querySelector<HTMLElement>('[data-month-group]:not([hidden]) h2');
-			const centered = (innerHeight - tray.offsetHeight) / 2;
-			tray.style.top = `${Math.max(centered, (firstMonth?.getBoundingClientRect().bottom ?? 0) + 16)}px`;
+			const maxHeight = Math.min(576, innerHeight - (document.querySelector<HTMLElement>('.site-header')?.offsetHeight ?? 0) - 32);
+			const centered = (innerHeight - maxHeight) / 2;
+			const top = Math.max(centered, (firstMonth?.getBoundingClientRect().bottom ?? 0) + 16);
+			tray.style.top = `${top}px`;
 			tray.style.transform = 'none';
+			const bottom = Math.min(innerHeight, footer?.getBoundingClientRect().top ?? innerHeight) - 16;
+			tray.style.setProperty('--category-height', `${Math.max(0, Math.min(maxHeight, bottom - top))}px`);
 			return;
 		}
 		tray.style.removeProperty('top');
 		tray.style.removeProperty('transform');
+		tray.style.removeProperty('--category-height');
 		if (footer) tray.style.setProperty('--footer-offset', `${Math.max(0, innerHeight - footer.getBoundingClientRect().top)}px`);
 	};
 	addEventListener('scroll', positionTray, { passive: true });
@@ -138,7 +143,13 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 </script>
 
 <style>
+	.archive-shell {
+		display: flex;
+		flex-direction: column;
+	}
+
 	.archive {
+		flex: 1;
 		padding-top: clamp(4rem, 8vw, 7rem);
 		padding-bottom: clamp(5rem, 10vw, 9rem);
 	}
@@ -188,8 +199,8 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 	}
 
 	.archive-sidebar details {
-		max-height: calc(100vh - var(--header-height) - 4rem);
-		overflow-y: auto;
+		max-height: var(--category-height, min(36rem, calc(100dvh - var(--header-height) - 2rem)));
+		overflow: hidden;
 		border: 1px solid var(--line);
 		border-radius: 8px;
 		background: var(--surface);
@@ -233,7 +244,25 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 
 	.category-filters {
 		display: grid;
+		max-height: calc(var(--category-height, min(36rem, calc(100dvh - var(--header-height) - 2rem))) - 49px);
 		padding: 0.5rem 0.75rem;
+		overflow-x: hidden;
+		overflow-y: auto;
+		scrollbar-color: var(--line) transparent;
+		scrollbar-width: thin;
+	}
+
+	.category-filters::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.category-filters::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.category-filters::-webkit-scrollbar-thumb {
+		border-radius: 999px;
+		background: var(--line);
 	}
 
 	.category-filters button {
