@@ -30,6 +30,37 @@
 	box-sizing: border-box;
 }
 
+@view-transition {
+	navigation: auto;
+}
+
+::view-transition-old(root) {
+	animation: page-leave 120ms ease-in both;
+}
+
+::view-transition-new(root) {
+	animation: page-enter 180ms ease-out both;
+}
+
+:where(body, body *) {
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease;
+}
+
+@keyframes page-leave {
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes page-enter {
+	from {
+		opacity: 0;
+	}
+}
+
 [hidden] {
 	display: none !important;
 }
@@ -376,6 +407,8 @@ summary.callout-title {
 	*,
 	*::before,
 	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
 	}
