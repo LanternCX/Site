@@ -7,6 +7,13 @@
 	--accent: #3f6335;
 	--accent-soft: #eff2e8;
 	--code-surface: #eeebe3;
+	--callout-note: #526f91;
+	--callout-summary: #735c8e;
+	--callout-tip: #7a6840;
+	--callout-success: #4f745c;
+	--callout-warning: #94682d;
+	--callout-danger: #9a5147;
+	--callout-quote: #6e675d;
 	--shadow: 0 18px 60px rgb(48 45 35 / 10%);
 	--font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, serif;
 	--font-ui: var(--font-atkinson), "Noto Sans SC", sans-serif;
@@ -23,6 +30,13 @@
 	--accent: #b1c778;
 	--accent-soft: #22281f;
 	--code-surface: #222523;
+	--callout-note: #89a9dc;
+	--callout-summary: #b49ad5;
+	--callout-tip: #d5ba73;
+	--callout-success: #89bd98;
+	--callout-warning: #dfad62;
+	--callout-danger: #dc847b;
+	--callout-quote: #aca89f;
 	--shadow: none;
 }
 
@@ -322,12 +336,22 @@ summary {
 	background: var(--code-surface);
 }
 
-.prose blockquote,
-.prose .callout {
+.prose blockquote {
 	margin: 2rem 0;
 	padding: 0.25rem 0 0.25rem 1.25rem;
 	border-left: 2px solid var(--accent);
 	color: var(--muted);
+}
+
+.prose .callout {
+	--callout-tone: var(--callout-note);
+	margin: 2rem 0;
+	padding: 1rem 1.25rem;
+	overflow: clip;
+	border: 1px solid color-mix(in srgb, var(--callout-tone) 32%, var(--line));
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--callout-tone) 9%, var(--surface));
+	color: var(--text);
 }
 
 .prose blockquote > :first-child,
@@ -364,12 +388,163 @@ summary {
 }
 
 .callout-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	color: var(--callout-tone);
 	font-family: var(--font-ui);
 	font-weight: 700;
+	line-height: 1.5;
+}
+
+.callout-title::before {
+	flex: 0 0 1em;
+	content: "✎";
+	font-family: var(--font-ui);
+	text-align: center;
+}
+
+.callout:is([data-callout="abstract"], [data-callout="summary"], [data-callout="tldr"])
+	.callout-title::before {
+	content: "☷";
+}
+
+.callout:is([data-callout="abstract"], [data-callout="summary"], [data-callout="tldr"]) {
+	--callout-tone: var(--callout-summary);
+}
+
+.callout[data-callout="info"] .callout-title::before {
+	content: "ⓘ";
+}
+
+.callout[data-callout="todo"] .callout-title::before {
+	content: "☑";
+}
+
+.callout:is([data-callout="tip"], [data-callout="hint"], [data-callout="important"])
+	.callout-title::before {
+	content: "✦";
+}
+
+.callout:is([data-callout="tip"], [data-callout="hint"], [data-callout="important"]) {
+	--callout-tone: var(--callout-tip);
+}
+
+.callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"])
+	.callout-title::before {
+	content: "✓";
+}
+
+.callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"]) {
+	--callout-tone: var(--callout-success);
+}
+
+.callout:is([data-callout="question"], [data-callout="help"], [data-callout="faq"])
+	.callout-title::before {
+	content: "?";
+}
+
+.callout:is([data-callout="question"], [data-callout="help"], [data-callout="faq"]),
+.callout:is([data-callout="warning"], [data-callout="caution"], [data-callout="attention"]) {
+	--callout-tone: var(--callout-warning);
+}
+
+.callout:is([data-callout="warning"], [data-callout="caution"], [data-callout="attention"])
+	.callout-title::before {
+	content: "△";
+}
+
+.callout:is([data-callout="failure"], [data-callout="fail"], [data-callout="missing"])
+	.callout-title::before {
+	content: "×";
+}
+
+.callout:is([data-callout="danger"], [data-callout="error"])
+	.callout-title::before {
+	content: "ϟ";
+}
+
+.callout:is(
+		[data-callout="failure"],
+		[data-callout="fail"],
+		[data-callout="missing"],
+		[data-callout="danger"],
+		[data-callout="error"],
+		[data-callout="bug"]
+	) {
+	--callout-tone: var(--callout-danger);
+}
+
+.callout[data-callout="bug"] .callout-title::before {
+	content: "⊗";
+}
+
+.callout[data-callout="example"] .callout-title::before {
+	content: "≡";
+}
+
+.callout[data-callout="example"] {
+	--callout-tone: var(--callout-summary);
+}
+
+.callout:is([data-callout="quote"], [data-callout="cite"])
+	.callout-title::before {
+	content: "❝";
+}
+
+.callout:is([data-callout="quote"], [data-callout="cite"]) {
+	--callout-tone: var(--callout-quote);
+}
+
+.callout strong,
+.callout a {
+	color: var(--callout-tone);
 }
 
 summary.callout-title {
 	cursor: pointer;
+	list-style: none;
+}
+
+summary.callout-title::-webkit-details-marker {
+	display: none;
+}
+
+summary.callout-title::after {
+	width: 0.45rem;
+	height: 0.45rem;
+	margin-left: auto;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	content: "";
+	transform: rotate(45deg);
+	transform-origin: center;
+	transition: transform 160ms var(--callout-easing);
+}
+
+details.callout[open] > summary.callout-title::after {
+	transform: rotate(225deg);
+}
+
+details.callout {
+	--callout-easing: ease-in;
+	interpolate-size: allow-keywords;
+}
+
+details.callout[open] {
+	--callout-easing: ease-out;
+}
+
+details.callout::details-content {
+	block-size: 0;
+	overflow-y: clip;
+	transition:
+		content-visibility 160ms allow-discrete,
+		block-size 160ms var(--callout-easing);
+}
+
+details.callout[open]::details-content {
+	block-size: auto;
 }
 
 @media (max-width: 720px) {
@@ -406,7 +581,8 @@ summary.callout-title {
 
 	*,
 	*::before,
-	*::after {
+	*::after,
+	*::details-content {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
