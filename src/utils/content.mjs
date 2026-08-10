@@ -1,3 +1,15 @@
+import { slug } from 'github-slugger';
+
+export const articleId = (entry) => {
+	const parts = entry.replaceAll('\\', '/').replace(/\.mdx?$/i, '').split('/');
+	if (parts.length < 2) throw new Error(`Article entry must be inside a category: ${entry}`);
+	const file = parts.pop();
+	if (parts.length > 1 && parts.at(-1) !== file) {
+		throw new Error(`Article file must match its bundle directory: ${entry}`);
+	}
+	return [...parts, ...(parts.length === 1 ? [file] : [])].map((part) => slug(part)).join('/');
+};
+
 export const categoryOf = (id) => id.split('/')[0];
 export const categoryLabel = (id, filePath) =>
 	filePath?.replaceAll('\\', '/').split('/blog/')[1]?.split('/')[0] ?? categoryOf(id);

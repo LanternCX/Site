@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+	articleId,
 	categoryAnchor,
 	categoryLabel,
 	excerpt,
@@ -10,6 +11,21 @@ import {
 	pagesOf,
 	paginationItems,
 } from '../src/utils/content.mjs';
+
+test('articles and nested bundles keep stable public IDs', () => {
+	assert.equal(articleId('Note/OS.md'), 'note/os');
+	assert.equal(articleId('Note/DB/DB.md'), 'note/db');
+	assert.equal(articleId('Note/Database/DB/DB.md'), 'note/database/db');
+	assert.equal(
+		articleId('Smart Car/2025 Smart Car Race Review/2025 Smart Car Race Review.md'),
+		'smart-car/2025-smart-car-race-review',
+	);
+	assert.equal(
+		articleId('Agent/Thinking in Agent.marp/Thinking in Agent.marp.md'),
+		'agent/thinking-in-agentmarp',
+	);
+	assert.throws(() => articleId('Note/DB/Article.md'), /must match its bundle directory/);
+});
 
 test('content helpers classify generated Astro IDs', () => {
 	assert.equal(categoryLabel('robotic/3dof-doc', 'src/content/blog/Robotic/3DOF Doc.md'), 'Robotic');

@@ -4,17 +4,18 @@ import { SITE_BRAND } from '../consts';
 import { categoryLabel, isArticle } from '../utils/content.mjs';
 
 const entries = await getCollection('blog');
+const pages = await getCollection('pages');
 const posts = entries.filter(({ id }) => isArticle(id)).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
-const about = entries.find(({ id }) => /(^|\/)pages\/about$/i.test(id));
-const friends = entries.find(({ id }) => /(^|\/)pages\/friends$/i.test(id));
+const about = pages.find(({ id }) => id === 'about');
+const friends = pages.find(({ id }) => id === 'friends');
 const path = Astro.url.pathname;
 const nav = [
 	{ label: '首页', href: '/', current: path === '/' || /^\/page\/\d+\/?$/.test(path) },
 	{ label: '分类', href: '/archive/', current: path === '/archive/' },
-	{ label: '友链', href: friends ? `/blog/${friends.id}/` : '/', current: /\/pages\/friends\/?$/i.test(path) },
-	{ label: '关于', href: about ? `/blog/${about.id}/` : '/#about', current: /\/pages\/about\/?$/i.test(path) },
+	{ label: '友链', href: friends ? `/blog/pages/${friends.id}/` : '/', current: /\/pages\/friends\/?$/i.test(path) },
+	{ label: '关于', href: about ? `/blog/pages/${about.id}/` : '/#about', current: /\/pages\/about\/?$/i.test(path) },
 ];
 ---
 

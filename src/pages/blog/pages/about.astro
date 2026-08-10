@@ -1,0 +1,19 @@
+---
+import { getEntry, render } from 'astro:content';
+import BlogPost from '../../../layouts/BlogPost.astro';
+import { firstHeading } from '../../../utils/content.mjs';
+
+const page = await getEntry('pages', 'about');
+if (!page) throw new Error('Missing About page content');
+const { Content } = await render(page);
+---
+
+<BlogPost
+	{...page.data}
+	category="pages"
+	categoryName="关于"
+	contentHeading={firstHeading(page.body)}
+	headings={[]}
+>
+	<Content />
+</BlogPost>

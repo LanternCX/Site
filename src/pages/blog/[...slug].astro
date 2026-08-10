@@ -5,12 +5,10 @@ import { categoryLabel, firstHeading } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
-	return posts
-		.filter(({ id }) => !/(^|\/)pages\/friends$/i.test(id))
-		.map((post) => ({
-			params: { slug: post.id },
-			props: post,
-		}));
+	return posts.map((post) => ({
+		params: { slug: post.id },
+		props: post,
+	}));
 }
 type Props = CollectionEntry<'blog'>;
 
@@ -23,7 +21,7 @@ const { Content, headings } = await render(post);
 	category={post.id.split('/')[0]}
 	categoryName={categoryLabel(post.id, post.filePath)}
 	contentHeading={firstHeading(post.body)}
-	headings={/(^|\/)pages\/about$/i.test(post.id) ? [] : headings}
+	{headings}
 >
 	<Content />
 </BlogPost>
