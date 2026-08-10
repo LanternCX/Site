@@ -138,22 +138,6 @@ summary {
 	padding: 0 var(--page-gutter);
 }
 
-.skip-link {
-	position: fixed;
-	top: 0.75rem;
-	left: 0.75rem;
-	z-index: 100;
-	transform: translateY(-150%);
-	padding: 0.65rem 0.9rem;
-	background: var(--text);
-	color: var(--surface);
-	text-decoration: none;
-}
-
-.skip-link:focus {
-	transform: translateY(0);
-}
-
 .visually-hidden {
 	position: absolute;
 	width: 1px;
@@ -334,6 +318,7 @@ summary {
 .prose :not(pre) > code {
 	padding: 0.12em 0.32em;
 	background: var(--code-surface);
+	overflow-wrap: anywhere;
 }
 
 .prose blockquote {
@@ -504,6 +489,15 @@ summary {
 summary.callout-title {
 	cursor: pointer;
 	list-style: none;
+}
+
+summary.callout-title:focus-visible {
+	outline: none;
+}
+
+details.callout:has(> summary.callout-title:focus-visible) {
+	border-color: var(--callout-tone);
+	box-shadow: 0 0 0 1px var(--callout-tone);
 }
 
 summary.callout-title::-webkit-details-marker {
