@@ -51,7 +51,9 @@ const friends = page.data.friends ?? [];
 										<strong>{friend.name}</strong>
 										<small>{friend.description}</small>
 									</span>
-									<span class="visit" aria-hidden="true">↗</span>
+									<svg class="visit" viewBox="0 0 24 24" aria-hidden="true">
+										<path d="M7 17 17 7M8 7h9v9" />
+									</svg>
 								</a>
 							))
 						}
@@ -147,7 +149,7 @@ const friends = page.data.friends ?? [];
 		gap: 1.25rem;
 		align-items: center;
 		min-height: 132px;
-		padding: 1.5rem 0;
+		padding: 1.5rem;
 		border-block: 1px solid var(--line);
 		color: var(--text);
 		text-decoration: none;
@@ -158,6 +160,11 @@ const friends = page.data.friends ?? [];
 	.friend:hover .visit,
 	.friend:focus-visible .visit {
 		color: var(--accent);
+	}
+
+	.friend:hover,
+	.friend:focus-visible {
+		background: var(--accent-soft);
 	}
 
 	.friend img {
@@ -186,8 +193,14 @@ const friends = page.data.friends ?? [];
 	}
 
 	.visit {
+		width: 1.25rem;
+		height: 1.25rem;
 		color: var(--muted);
-		font-size: 1.1rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-linecap: square;
+		stroke-linejoin: miter;
+		stroke-width: 1.75;
 	}
 
 	@media (max-width: 720px) {
