@@ -1,0 +1,49 @@
+<section class="comments" aria-label="评论"></section>
+
+<script>
+	import darkTheme from '../styles/giscus-dark.css?raw';
+	import lightTheme from '../styles/giscus-light.css?raw';
+
+	const comments = document.querySelector<HTMLElement>('.comments');
+	const themeUrl = () =>
+		`data:text/css;charset=utf-8,${encodeURIComponent(document.documentElement.dataset.theme === 'dark' ? darkTheme : lightTheme)}`;
+	const syncTheme = () => {
+		comments?.querySelector<HTMLIFrameElement>('.giscus-frame')?.contentWindow?.postMessage(
+			{ giscus: { setConfig: { theme: themeUrl() } } },
+			'https://giscus.app',
+		);
+	};
+
+	if (comments) {
+		const script = document.createElement('script');
+		Object.assign(script.dataset, {
+			repo: 'LanternCX/Site',
+			repoId: 'R_kgDOT0d5ew',
+			category: 'Announcements',
+			categoryId: 'DIC_kwDOT0d5e84DDI8m',
+			mapping: 'pathname',
+			strict: '1',
+			reactionsEnabled: '1',
+			emitMetadata: '0',
+			inputPosition: 'bottom',
+			theme: themeUrl(),
+			lang: 'zh-CN',
+			loading: 'lazy',
+		});
+		script.src = 'https://giscus.app/client.js';
+		script.crossOrigin = 'anonymous';
+		script.async = true;
+		comments.append(script);
+	}
+
+	const themeObserver = new MutationObserver(syncTheme);
+	themeObserver.observe(document.documentElement, { attributeFilter: ['data-theme'] });
+</script>
+
+<style>
+	.comments {
+		max-width: 760px;
+		margin: 4rem auto 0;
+	}
+
+</style>

@@ -50,8 +50,10 @@ const nav = [
 
 			<details class="mobile-menu">
 				<summary class="icon-button" aria-label="打开导航菜单">
-					<svg viewBox="0 0 24 24" aria-hidden="true">
-						<path d="M4 7h16M4 12h16M4 17h16"></path>
+					<svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+						<path class="menu-icon-top" d="M4 7h16"></path>
+						<path class="menu-icon-middle" d="M4 12h16"></path>
+						<path class="menu-icon-bottom" d="M4 17h16"></path>
 					</svg>
 				</summary>
 				<div class="menu-panel">
@@ -224,6 +226,26 @@ const nav = [
 		stroke-width: 1.75;
 	}
 
+	.menu-icon path {
+		transform-box: fill-box;
+		transform-origin: center;
+		transition:
+			transform 160ms ease,
+			opacity 160ms ease;
+	}
+
+	.mobile-menu[open] .menu-icon-top {
+		transform: translateY(5px) rotate(45deg);
+	}
+
+	.mobile-menu[open] .menu-icon-middle {
+		opacity: 0;
+	}
+
+	.mobile-menu[open] .menu-icon-bottom {
+		transform: translateY(-5px) rotate(-45deg);
+	}
+
 	.moon,
 	:global(html[data-theme='dark']) .sun {
 		display: none;
@@ -246,6 +268,17 @@ const nav = [
 		display: none;
 	}
 
+	.mobile-menu::details-content {
+		opacity: 0;
+		transition:
+			content-visibility 160ms allow-discrete,
+			opacity 160ms ease;
+	}
+
+	.mobile-menu[open]::details-content {
+		opacity: 1;
+	}
+
 	.menu-panel {
 		position: absolute;
 		top: 52px;
@@ -256,6 +289,16 @@ const nav = [
 		border: 1px solid var(--line);
 		background: var(--surface);
 		box-shadow: var(--shadow);
+		transform: translateY(-0.5rem);
+		transition:
+			transform 160ms ease,
+			opacity 160ms ease;
+		opacity: 0;
+	}
+
+	.mobile-menu[open] .menu-panel {
+		transform: none;
+		opacity: 1;
 	}
 
 	.menu-panel a,
@@ -282,6 +325,25 @@ const nav = [
 		background: var(--surface);
 		color: var(--text);
 		box-shadow: var(--shadow);
+		transform: translateY(0.75rem) scale(0.98);
+		transition:
+			display 160ms allow-discrete,
+			overlay 160ms allow-discrete,
+			transform 160ms ease,
+			opacity 160ms ease;
+		opacity: 0;
+	}
+
+	.search-dialog[open] {
+		transform: none;
+		opacity: 1;
+	}
+
+	@starting-style {
+		.search-dialog[open] {
+			transform: translateY(0.75rem) scale(0.98);
+			opacity: 0;
+		}
 	}
 
 	.search-dialog::backdrop {

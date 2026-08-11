@@ -116,6 +116,14 @@ summary {
 	outline: 2px solid var(--accent);
 }
 
+:where(a, button, summary, input, select, textarea) {
+	transition:
+		color 160ms ease,
+		background-color 160ms ease,
+		border-color 160ms ease,
+		opacity 160ms ease;
+}
+
 ::selection {
 	background: var(--accent);
 	color: var(--surface);
