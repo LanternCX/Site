@@ -517,6 +517,33 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 			transform: translate(-50%, -50%);
 		}
 
+		.archive-sidebar details[open] .category-filters {
+			transform: translate(-50%, -50%);
+			opacity: 1;
+		}
+
+		.archive-sidebar details::details-content {
+			opacity: 0;
+			transition:
+				content-visibility 160ms allow-discrete,
+				opacity 160ms ease;
+		}
+
+		.archive-sidebar details[open]::details-content {
+			opacity: 1;
+		}
+
+		.archive-sidebar details:not([open]) .category-filters {
+			transform: translate(-50%, calc(-50% + 0.75rem)) scale(0.98);
+			opacity: 0;
+		}
+
+		.category-filters {
+			transition:
+				transform 160ms ease,
+				opacity 160ms ease;
+		}
+
 		.category-filters {
 			gap: 0 1rem;
 		}
@@ -556,4 +583,5 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 			max-width: calc(100vw - 1.5rem);
 		}
 	}
+
 </style>
