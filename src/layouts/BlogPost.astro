@@ -17,9 +17,11 @@ interface Props {
 	categoryName: string;
 	contentHeading?: string;
 	headings?: MarkdownHeading[];
+	previous?: string;
+	next?: string;
 }
 
-const { title, description, pubDate, updatedDate, category, categoryName, contentHeading, headings = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, category, categoryName, contentHeading, headings = [], previous, next } = Astro.props;
 const duplicateContentTitle = contentHeading === title;
 const outline = outlineItems(headings, duplicateContentTitle ? title : undefined);
 ---
@@ -46,6 +48,13 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 					<div class="prose">
 						<slot />
 					</div>
+					<nav class="article-navigation" aria-label="文章导航">
+						{previous && <a class="previous" href={`/blog/${previous}/`}>上一篇</a>}
+						{previous && <span aria-hidden="true">|</span>}
+						<a class="home" href="/">回首页</a>
+						{next && <span aria-hidden="true">|</span>}
+						{next && <a class="next" href={`/blog/${next}/`}>下一篇</a>}
+					</nav>
 					<Comments />
 				</article>
 			</main>
@@ -179,6 +188,37 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 </script>
 
 <style>
+	.article-navigation {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		max-width: 760px;
+		margin: 4rem auto 0;
+		padding-top: 2rem;
+		border-top: 1px solid var(--line);
+		font-size: 1rem;
+	}
+
+	.article-navigation a {
+		display: flex;
+		min-height: 44px;
+		align-items: center;
+		color: var(--accent);
+		font-family: var(--font-serif);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.article-navigation span {
+		margin: 0 0.55em;
+		color: var(--muted);
+		font-weight: 400;
+	}
+
+	.article-navigation a:hover {
+		text-decoration: underline;
+	}
+
 	.duplicate-content-title :global(.prose > h2:first-of-type) {
 		display: none;
 	}

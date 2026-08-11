@@ -1,18 +1,30 @@
 ---
 import { type CollectionEntry, getCollection, render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
-import { categoryLabel, firstHeading } from '../../utils/content.mjs';
+import { categoryLabel, firstHeading, isArticle } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
+	const articles = posts
+		.filter((post) => isArticle(post.id))
+		.sort((a, b) => a.data.pubDate.getTime() - b.data.pubDate.getTime() || a.id.localeCompare(b.id));
+	const articleIndex = new Map(articles.map((post, index) => [post.id, index]));
 	return posts.map((post) => ({
 		params: { slug: post.id },
-		props: post,
+		props: {
+			post,
+			previous: articles[articleIndex.get(post.id)! - 1],
+			next: articles[articleIndex.get(post.id)! + 1],
+		},
 	}));
 }
-type Props = CollectionEntry<'blog'>;
+type Props = {
+	post: CollectionEntry<'blog'>;
+	previous?: CollectionEntry<'blog'>;
+	next?: CollectionEntry<'blog'>;
+};
 
-const post = Astro.props;
+const { post, previous, next } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
@@ -21,6 +33,8 @@ const { Content, headings } = await render(post);
 	category={post.id.split('/')[0]}
 	categoryName={categoryLabel(post.id, post.filePath)}
 	contentHeading={firstHeading(post.body)}
+	previous={previous?.id}
+	next={next?.id}
 	{headings}
 >
 	<Content />
