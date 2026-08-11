@@ -1,10 +1,12 @@
 # Cao Xin 的小站
 
+[English](docs/README-en.md)
+
 一个基于 Astro、可直接接入 Obsidian Vault 的个人博客。
 
 ## 预览
 
-Link: [www.caoxin.xyz](https://www.caoxin.xyz/)
+访问 [www.caoxin.xyz](https://www.caoxin.xyz/)
 
 ![浅色主题下的桌面端与手机端首页](docs/images/home-page-2-light.png)
 
@@ -19,7 +21,7 @@ Link: [www.caoxin.xyz](https://www.caoxin.xyz/)
 
 [LanternCX/Site](https://github.com/LanternCX/Site) 仓库中独立实现了对 [Obsidian Callout](https://obsidian.md/help/callouts) 等语法进行解析的 [remark](https://github.com/remarkjs/remark) 插件，并参考一些 [Obsidian Theme](https://community.obsidian.md/search?type=theme) 绘制了前端样式
 
-在 [LanternCX/Site](https://github.com/LanternCX/Site/tree/main/src/content) 中链接博客的 [Obsidian Vault](https://obsidian.md/help/vault) 仓库 [LanternCX/Bolgs](https://github.com/LanternCX/Blogs) 后，借助 [Github Actions](https://github.com/features/actions) 实现了 Astro 静态网页的构建、测试以及自动发布，实现了非常丝滑的阅读和发布体验
+在 [LanternCX/Site](https://github.com/LanternCX/Site/tree/main/src/content) 中链接博客的 [Obsidian Vault](https://obsidian.md/help/vault) 仓库 [LanternCX/Bolgs](https://github.com/LanternCX/Blogs) 后，借助 [Github Actions](https://github.com/features/actions) 实现了 Astro 静态网页的构建、测试以及自动发布，实现了非常丝滑的写作和发布体验
 
 因此你可以直接通过 [Obsidian](https://obsidian.md) 作为一个 Vault 打开 [LanternCX/Bolgs](https://github.com/LanternCX/Blogs) 阅读我的博客
 
