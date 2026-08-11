@@ -54,14 +54,13 @@ import { SITE_AUTHOR } from '../consts';
 
 	@media (max-width: 720px) {
 		.site-footer {
-			grid-template-columns: 1fr auto;
-			gap: 0.5rem 1rem;
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+			text-align: center;
 		}
 
-		.footer-note {
-			grid-column: 1 / -1;
-			grid-row: 2;
-			text-align: center;
+		.site-footer nav {
+			justify-content: center;
 		}
 	}
 </style>
