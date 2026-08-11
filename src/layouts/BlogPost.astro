@@ -2,6 +2,7 @@
 import type { MarkdownHeading } from 'astro';
 import 'katex/dist/katex.min.css';
 import BaseHead from '../components/BaseHead.astro';
+import Comments from '../components/Comments.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
@@ -45,6 +46,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 					<div class="prose">
 						<slot />
 					</div>
+					<Comments />
 				</article>
 			</main>
 			{

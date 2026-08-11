@@ -1,0 +1,94 @@
+@import url('https://giscus.app/themes/noborder_dark.css');
+
+main {
+	--primary-default: 177, 199, 120;
+	--color-btn-primary-text: #101211;
+	--color-btn-primary-bg: #b1c778;
+	--color-btn-primary-border: #b1c778;
+	--color-btn-primary-hover-bg: #c0d58a;
+	--color-btn-primary-hover-border: #c0d58a;
+	--color-fg-default: #ecede8;
+	--color-fg-muted: #a5aaa2;
+	--color-fg-subtle: #a5aaa2;
+	--color-canvas-default: #191c1a;
+	--color-canvas-overlay: #191c1a;
+	--color-canvas-inset: #101211;
+	--color-canvas-subtle: #22281f;
+	--color-border-default: #363a36;
+	--color-border-muted: #363a36;
+	--color-accent-fg: #b1c778;
+	--color-accent-emphasis: #b1c778;
+	--color-accent-subtle: #22281f;
+	font-family: Atkinson Hyperlegible, Noto Sans SC, system-ui, sans-serif;
+}
+
+.gsc-main {
+	gap: 24px;
+}
+
+.gsc-header {
+	display: none;
+}
+
+.gsc-reactions-count {
+	font-size: 0;
+}
+
+.gsc-reactions-count::after {
+	display: block;
+	margin-bottom: 16px;
+	color: var(--color-fg-default);
+	font-family: "Noto Serif SC", "Source Han Serif SC", serif;
+	font-size: 1.25rem;
+	font-weight: 600;
+	content: '欢迎一起交流～';
+}
+
+.gsc-comment-box-tabs {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+
+.gsc-comment-box:not(.gsc-comment-box-is-reply) {
+	border: 1px solid var(--color-border-default);
+	border-radius: 4px;
+}
+
+.gsc-comment-box-tabs {
+	border-bottom: 1px solid var(--color-border-default);
+}
+
+.gsc-comment-box-tabs button.color-text-primary {
+	position: relative;
+	z-index: 1;
+}
+
+.gsc-comment-box-tabs button.color-text-primary::after {
+	position: absolute;
+	right: 0;
+	bottom: -2px;
+	left: 0;
+	height: 3px;
+	background: var(--color-canvas-default);
+	content: '';
+}
+
+.gsc-comment-box-main {
+	margin: 12px;
+}
+
+.gsc-comment-box-bottom {
+	margin: 12px;
+}
+
+.gsc-comment-box-tabs button {
+	min-height: 44px;
+}
+
+.gsc-comment-box .btn-primary {
+	height: 32px;
+	min-height: 0;
+	padding-block: 0;
+	border-radius: 4px !important;
+}
