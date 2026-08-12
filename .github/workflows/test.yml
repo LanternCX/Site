@@ -10,6 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Check PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          [[ "$PR_TITLE" =~ ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._/-]+\))?!?:\ .+ ]]
       - uses: actions/checkout@v7
         with:
           submodules: true
