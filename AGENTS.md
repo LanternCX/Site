@@ -8,6 +8,10 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Testing
+
+Tests must not depend on the actual contents of `src/content/blog`. Use synthetic fixtures so changes to the Obsidian vault do not affect test results.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build
