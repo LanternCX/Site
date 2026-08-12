@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { pagesOf, paginationItems } from '../src/utils/content.mjs';
+import { articleId, pagesOf, paginationItems } from '../src/utils/content.mjs';
+
+test('article IDs follow their vault-relative paths', () => {
+	assert.equal(articleId('Category/Nested Folder/Article.md'), 'category/nested-folder/article');
+	assert.equal(articleId('Another Category/Article.mdx'), 'another-category/article');
+});
 
 test('pagination helpers split and abbreviate pages', () => {
 	assert.deepEqual(pagesOf([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
