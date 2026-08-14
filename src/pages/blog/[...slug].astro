@@ -1,13 +1,13 @@
 ---
 import { type CollectionEntry, getCollection, render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
-import { categoryLabel, firstHeading, isArticle } from '../../utils/content.mjs';
+import { categoryLabel, categoryOf, firstHeading } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
-	const articles = posts
-		.filter((post) => isArticle(post.id))
-		.sort((a, b) => a.data.pubDate.getTime() - b.data.pubDate.getTime() || a.id.localeCompare(b.id));
+	const articles = posts.sort(
+		(a, b) => a.data.pubDate.getTime() - b.data.pubDate.getTime() || a.id.localeCompare(b.id),
+	);
 	const articleIndex = new Map(articles.map((post, index) => [post.id, index]));
 	return posts.map((post) => ({
 		params: { slug: post.id },
@@ -30,7 +30,7 @@ const { Content, headings } = await render(post);
 
 <BlogPost
 	{...post.data}
-	category={post.id.split('/')[0]}
+	category={categoryOf(post.id, post.filePath)}
 	categoryName={categoryLabel(post.id, post.filePath)}
 	contentHeading={firstHeading(post.body)}
 	previous={previous?.id}

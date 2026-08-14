@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
-import { articleId } from './utils/content.mjs';
+import { ARTICLE_PATH_PATTERN, PERMALINK_PATTERN, permalinkOf } from './utils/content.mjs';
 
 const schema = z.object({
 	title: z.string(),
@@ -13,10 +13,13 @@ const schema = z.object({
 const blog = defineCollection({
 	loader: glob({
 		base: './src/content/blog',
-		pattern: ['**/*.{md,mdx}', '!README.md'],
-		generateId: ({ entry }) => articleId(entry),
+		pattern: ['**/*.{md,mdx}', '!**/README.md', '!**/*.marp.md'],
+		generateId: ({ entry, data }) => permalinkOf(entry, data.permalink),
 	}),
-	schema,
+	schema: schema.extend({
+		permalink: z.string().regex(PERMALINK_PATTERN),
+		redirectFrom: z.array(z.string().regex(ARTICLE_PATH_PATTERN)).optional(),
+	}),
 });
 
 const pages = defineCollection({

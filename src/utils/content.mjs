@@ -1,14 +1,60 @@
 import { slug } from 'github-slugger';
 
+export const PERMALINK_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const ARTICLE_PATH_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\/[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)*$/;
+
+export const permalinkOf = (entry, permalink) => {
+	if (!PERMALINK_PATTERN.test(permalink ?? '')) {
+		throw new Error(`Invalid permalink for ${entry}: ${permalink ?? '(missing)'}`);
+	}
+	return permalink;
+};
+
 export const articleId = (entry) => {
 	const parts = entry.replaceAll('\\', '/').replace(/\.mdx?$/i, '').split('/');
 	if (parts.length < 2) throw new Error(`Article entry must be inside a category: ${entry}`);
 	return parts.map((part) => slug(part)).join('/');
 };
 
-export const categoryOf = (id) => id.split('/')[0];
+export const permalinkIndex = (entries) => {
+	const index = new Map();
+	const used = new Set();
+	for (const [entry, permalink] of entries) {
+		permalinkOf(entry, permalink);
+		if (used.has(permalink)) {
+			throw new Error(`Duplicate permalink: ${permalink}`);
+		}
+		index.set(entry, permalink);
+		used.add(permalink);
+	}
+	return index;
+};
+
+export const articleRedirects = (articles) => {
+	const redirects = {};
+	const canonical = new Set(articles.map(({ permalink }) => permalink));
+	for (const { entry, permalink, redirectFrom = [] } of articles) {
+		for (const source of [articleId(entry), ...redirectFrom]) {
+			if (!ARTICLE_PATH_PATTERN.test(source)) throw new Error(`Invalid redirect path: ${source}`);
+			if (source === permalink) continue;
+			if (canonical.has(source)) throw new Error(`Redirect conflicts with permalink: ${source}`);
+			const from = `/blog/${source}/`;
+			const destination = `/blog/${permalink}/`;
+			if (redirects[from] && redirects[from] !== destination) {
+				throw new Error(`Duplicate redirect path: ${source}`);
+			}
+			redirects[from] = destination;
+		}
+	}
+	return redirects;
+};
+
+const categoryFromPath = (filePath) =>
+	filePath?.replaceAll('\\', '/').split('/blog/')[1]?.split('/')[0];
+
+export const categoryOf = (id, filePath) => slug(categoryFromPath(filePath) ?? id.split('/')[0]);
 export const categoryLabel = (id, filePath) =>
-	filePath?.replaceAll('\\', '/').split('/blog/')[1]?.split('/')[0] ?? categoryOf(id);
+	categoryFromPath(filePath) ?? id.split('/')[0];
 export const categoryAnchor = (category) => `category-${category.toLowerCase().replaceAll(' ', '-')}`;
 export const formatDate = (date) => date.toISOString().slice(0, 10).replaceAll('-', '.');
 export const firstHeading = (body) => body.match(/^#\s+(.+)$/m)?.[1].replace(/\*\*|__|`/g, '').trim();

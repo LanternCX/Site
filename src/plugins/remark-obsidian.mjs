@@ -6,8 +6,8 @@ const WIKI_LINK = /(!?)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 const IMAGE_EXTENSION = /\.(?:apng|avif|gif|jpe?g|png|svg|webp)$/i;
 const CALLOUT = /^\[!([^\]\s]+)\]([+-]?)(?:[ \t]+([^\n]*))?(?:\n([\s\S]*))?$/;
 
-export default function remarkObsidian({ articleEntries = [], imageEntries = [] } = {}) {
-	const articleLinks = indexArticleLinks(articleEntries);
+export default function remarkObsidian({ articleEntries = [], articlePermalinks = new Map(), imageEntries = [] } = {}) {
+	const articleLinks = indexArticleLinks(articleEntries, articlePermalinks);
 	const imageLinks = indexImageLinks(imageEntries);
 	return (tree, file) => {
 		const context = {
@@ -153,14 +153,16 @@ function resolveImageEmbed(target, label, { imageLinks, currentEntry, file }) {
 	return node;
 }
 
-function indexArticleLinks(entries) {
+function indexArticleLinks(entries, permalinks) {
 	const links = new Map();
 	for (const entry of entries) {
 		if (!entry.replaceAll('\\', '/').includes('/')) continue;
 		const id = articleId(entry);
 		if (!isArticle(id)) continue;
 		const path = normalizeArticleTarget(entry);
-		const url = `/blog/${id}/`;
+		const permalink = permalinks.get(entry);
+		if (!permalink) continue;
+		const url = `/blog/${permalink}/`;
 		for (const target of new Set([path, path.split('/').at(-1)])) {
 			indexTarget(links, target, url);
 		}

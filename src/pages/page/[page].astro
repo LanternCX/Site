@@ -1,12 +1,10 @@
 ---
 import { getCollection } from 'astro:content';
 import HomePage from '../../components/HomePage.astro';
-import { isArticle, pagesOf } from '../../utils/content.mjs';
+import { pagesOf } from '../../utils/content.mjs';
 
 export async function getStaticPaths() {
-	const allPosts = (await getCollection('blog'))
-		.filter(({ id }) => isArticle(id))
-		.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+	const allPosts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 	const pages = pagesOf(allPosts, 8);
 	return pages.slice(1).map((posts, index) => ({
 		params: { page: String(index + 2) },

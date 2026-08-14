@@ -16,6 +16,12 @@ test('renders Obsidian page links and callouts', async () => {
 						'Robotic/Current/Sibling.md',
 						'Robotic/DC Motor/DC Motor.md',
 					],
+					articlePermalinks: new Map([
+						['Note/Guide.md', 'guide'],
+						['Robotic/Current/Current.md', 'current'],
+						['Robotic/Current/Sibling.md', 'sibling'],
+						['Robotic/DC Motor/DC Motor.md', 'dc-motor'],
+					]),
 					imageEntries: ['Robotic/Current/assets/photo.png'],
 				},
 			],
@@ -42,9 +48,9 @@ test('renders Obsidian page links and callouts', async () => {
 `, { fileURL: new URL('file:///vault/Robotic/Current/Current.md') });
 
 	assert.match(code, /<a href="#target-heading">Jump<\/a>/);
-	assert.match(code, /<a href="\/blog\/robotic\/dc-motor\/dc-motor\/#control">Motor control<\/a>/);
-	assert.match(code, /<a href="\/blog\/robotic\/current\/sibling\/">\.\/Sibling<\/a>/);
-	assert.match(code, /<a href="\/blog\/note\/guide\/">\.\.\/\.\.\/Note\/Guide<\/a>/);
+	assert.match(code, /<a href="\/blog\/dc-motor\/#control">Motor control<\/a>/);
+	assert.match(code, /<a href="\/blog\/sibling\/">\.\/Sibling<\/a>/);
+	assert.match(code, /<a href="\/blog\/guide\/">\.\.\/\.\.\/Note\/Guide<\/a>/);
 	assert.match(code, /&#x22;src&#x22;:&#x22;\.\/assets\/photo\.png/);
 	assert.match(code, /&#x22;alt&#x22;:&#x22;photo/);
 	assert.match(code, /&#x22;width&#x22;:320/);
@@ -78,7 +84,10 @@ test('reports unresolved and ambiguous article links', () => {
 		children: [{ type: 'paragraph', children: [{ type: 'text', value: '[[Missing]] [[Shared]]' }] }],
 	};
 
-	remarkObsidian({ articleEntries: ['One/Shared.md', 'Two/Shared.md'] })(tree, {
+	remarkObsidian({
+		articleEntries: ['One/Shared.md', 'Two/Shared.md'],
+		articlePermalinks: new Map([['One/Shared.md', 'one'], ['Two/Shared.md', 'two']]),
+	})(tree, {
 		message: (message) => warnings.push(message),
 	});
 

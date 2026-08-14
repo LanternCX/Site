@@ -4,12 +4,10 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
-import { categoryLabel, categoryOf, excerpt, formatDate, isArticle } from '../utils/content.mjs';
-const posts = (await getCollection('blog'))
-	.filter(({ id }) => isArticle(id))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-const categories = [...new Set(posts.map(({ id }) => categoryOf(id)))].map((category) => {
-	const entries = posts.filter(({ id }) => categoryOf(id) === category);
+import { categoryLabel, categoryOf, excerpt, formatDate } from '../utils/content.mjs';
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const categories = [...new Set(posts.map(({ id, filePath }) => categoryOf(id, filePath)))].map((category) => {
+	const entries = posts.filter(({ id, filePath }) => categoryOf(id, filePath) === category);
 	return { category, label: categoryLabel(entries[0].id, entries[0].filePath), entries };
 });
 const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice(0, 7));
@@ -70,7 +68,7 @@ const months = Map.groupBy(posts, ({ data }) => data.pubDate.toISOString().slice
 									<h2 id={`month-${month}`}>{month.replace('-', '.')}</h2>
 									<ol>
 										{entries.map((post) => (
-											<li data-category={categoryOf(post.id)}>
+											<li data-category={categoryOf(post.id, post.filePath)}>
 												<time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate).slice(8)}</time>
 												<div class="archive-copy">
 													<a href={`/blog/${post.id}/`}>{post.data.title}</a>
