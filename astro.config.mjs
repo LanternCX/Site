@@ -4,10 +4,14 @@ import mdx from '@astrojs/mdx';
 import { unified } from '@astrojs/markdown-remark';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig, fontProviders } from 'astro/config';
+import { globSync } from 'node:fs';
 import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
 import remarkDocumentOutline from './src/plugins/remark-document-outline.mjs';
 import remarkObsidian from './src/plugins/remark-obsidian.mjs';
+
+const articleEntries = globSync('**/*.{md,mdx}', { cwd: 'src/content/blog' });
+const imageEntries = globSync('**/*.{apng,avif,gif,jpeg,jpg,png,svg,webp}', { cwd: 'src/content/blog' });
 
 // https://astro.build/config
 export default defineConfig({
@@ -16,7 +20,7 @@ export default defineConfig({
 	integrations: [mdx(), sitemap()],
 	markdown: {
 		processor: unified({
-			remarkPlugins: [remarkMath, remarkDocumentOutline, remarkObsidian],
+			remarkPlugins: [remarkMath, remarkDocumentOutline, [remarkObsidian, { articleEntries, imageEntries }]],
 			rehypePlugins: [[rehypeKatex, { strict: false }]],
 		}),
 	},
