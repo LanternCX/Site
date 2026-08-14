@@ -14,8 +14,8 @@ interface Props {
 }
 
 const { posts, allPosts, currentPage, lastPage } = Astro.props;
-const topicCounts = [...new Set(allPosts.map(({ id }) => categoryOf(id)))].map((category) => {
-	const entries = allPosts.filter(({ id }) => categoryOf(id) === category);
+const topicCounts = [...new Set(allPosts.map(({ id, filePath }) => categoryOf(id, filePath)))].map((category) => {
+	const entries = allPosts.filter(({ id, filePath }) => categoryOf(id, filePath) === category);
 	return { category, label: categoryLabel(entries[0].id, entries[0].filePath), count: entries.length };
 });
 const keywords = [...SITE_KEYWORDS, ...topicCounts.flatMap(({ category, label }) => [category, label])];

@@ -1,13 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import { SITE_BRAND } from '../consts';
-import { categoryLabel, isArticle } from '../utils/content.mjs';
+import { categoryLabel } from '../utils/content.mjs';
 
 const entries = await getCollection('blog');
 const pages = await getCollection('pages');
-const posts = entries.filter(({ id }) => isArticle(id)).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const posts = entries.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 const about = pages.find(({ id }) => id === 'about');
 const friends = pages.find(({ id }) => id === 'friends');
 const path = Astro.url.pathname;

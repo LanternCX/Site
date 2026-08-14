@@ -1,10 +1,48 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { articleId, pagesOf, paginationItems } from '../src/utils/content.mjs';
+import {
+	articleId,
+	articleRedirects,
+	categoryOf,
+	pagesOf,
+	paginationItems,
+	permalinkIndex,
+} from '../src/utils/content.mjs';
 
 test('article IDs follow their vault-relative paths', () => {
 	assert.equal(articleId('Category/Nested Folder/Article.md'), 'category/nested-folder/article');
 	assert.equal(articleId('Another Category/Article.mdx'), 'another-category/article');
+});
+
+test('permalinks are present, URL-safe, and unique', () => {
+	assert.deepEqual(
+		[...permalinkIndex([
+			['Category/First.md', 'first-article'],
+			['Category/Second.md', 'second-article'],
+		])],
+		[
+			['Category/First.md', 'first-article'],
+			['Category/Second.md', 'second-article'],
+		],
+	);
+	assert.throws(() => permalinkIndex([['Category/First.md', 'Not Safe']]), /Invalid permalink/);
+	assert.throws(
+		() => permalinkIndex([['Category/First.md', 'same'], ['Category/Second.md', 'same']]),
+		/Duplicate permalink/,
+	);
+});
+
+test('old vault paths and declared aliases redirect to permalinks', () => {
+	assert.deepEqual(articleRedirects([
+		{ entry: 'Category/Long Article.md', permalink: 'short', redirectFrom: ['category/older-name'] },
+	]), {
+		'/blog/category/long-article/': '/blog/short/',
+		'/blog/category/older-name/': '/blog/short/',
+	});
+});
+
+test('categories remain based on the vault folder', () => {
+	assert.equal(categoryOf('short-link', '/repo/src/content/blog/ACM-ICPC/Article.md'), 'acm-icpc');
 });
 
 test('pagination helpers split and abbreviate pages', () => {

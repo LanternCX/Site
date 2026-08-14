@@ -1,11 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import HomePage from '../components/HomePage.astro';
-import { isArticle, pagesOf } from '../utils/content.mjs';
+import { pagesOf } from '../utils/content.mjs';
 
-const allPosts = (await getCollection('blog'))
-	.filter(({ id }) => isArticle(id))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const allPosts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 const pages = pagesOf(allPosts, 8);
 ---
 
