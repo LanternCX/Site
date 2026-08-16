@@ -58,6 +58,32 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 					<Comments />
 				</article>
 			</main>
+			<dialog id="image-viewer" class="image-viewer" aria-label="图片查看器" data-image-viewer>
+				<div class="image-viewer-stage" data-image-viewer-stage>
+					<img alt="" draggable="false" data-image-viewer-content />
+				</div>
+				<p class="image-viewer-counter" aria-live="polite" data-image-viewer-counter></p>
+				<form method="dialog">
+					<button type="submit" aria-label="关闭图片查看器">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+					</button>
+				</form>
+				<button class="image-viewer-previous" type="button" aria-label="上一张图片" data-image-viewer-previous>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+				</button>
+				<button class="image-viewer-next" type="button" aria-label="下一张图片" data-image-viewer-next>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+				</button>
+				<div class="image-viewer-zoom" role="group" aria-label="缩放控制">
+					<button type="button" aria-label="缩小图片" data-image-viewer-zoom-out>
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+					</button>
+					<button class="image-viewer-scale" type="button" aria-label="重置图片缩放" data-image-viewer-reset>100%</button>
+					<button type="button" aria-label="放大图片" data-image-viewer-zoom-in>
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" /></svg>
+					</button>
+				</div>
+			</dialog>
 			{
 				outline.length > 1 && (
 					<>
@@ -127,12 +153,32 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-outline-link]')];
 	const sidebar = document.querySelector<HTMLElement>('[data-outline-sidebar]');
 	const articleHeader = document.querySelector<HTMLElement>('.article-header');
+	const imageViewer = document.querySelector<HTMLDialogElement>('[data-image-viewer]');
+	const viewerImage = imageViewer?.querySelector<HTMLImageElement>('[data-image-viewer-content]');
+	const viewerStage = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-stage]');
+	const viewerCounter = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-counter]');
+	const previousImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-previous]');
+	const nextImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-next]');
+	const zoomOut = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-zoom-out]');
+	const zoomIn = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-zoom-in]');
+	const resetZoom = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-reset]');
+	const articleImages = [...document.querySelectorAll<HTMLImageElement>('.prose img:not([src^="data:"])')];
 	const desktopOutline = matchMedia('(min-width: 1220px)');
 	const sections = dialogLinks.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))));
 	const footer = document.querySelector<HTMLElement>('.site-footer');
 	let positions: number[] = [];
 	let frame = 0;
 	let currentIndex = -1;
+	let imageIndex = 0;
+	let scale = 1;
+	let panX = 0;
+	let panY = 0;
+	let pinchDistance = 0;
+	let pinchCenter = { x: 0, y: 0 };
+	let swipeStart = { x: 0, y: 0 };
+	let swipePointerType = '';
+	let didPinch = false;
+	const pointers = new Map<number, { x: number; y: number }>();
 
 	const measure = () => {
 		positions = sections.map((section) => (section?.getBoundingClientRect().top ?? 0) + scrollY);
@@ -180,6 +226,156 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		if (event.target === dialog) dialog.close();
 	});
 	dialogLinks.forEach((link) => link.addEventListener('click', () => dialog?.close()));
+	const clampPan = () => {
+		if (!viewerImage || !viewerStage) return;
+		const style = getComputedStyle(viewerStage);
+		const availableWidth = viewerStage.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+		const availableHeight = viewerStage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+		const limitX = Math.max(0, (viewerImage.clientWidth * scale - availableWidth) / 2);
+		const limitY = Math.max(0, (viewerImage.clientHeight * scale - availableHeight) / 2);
+		panX = Math.max(-limitX, Math.min(limitX, panX));
+		panY = Math.max(-limitY, Math.min(limitY, panY));
+	};
+	const applyImageTransform = () => {
+		if (!viewerImage || !resetZoom) return;
+		clampPan();
+		viewerImage.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+		viewerImage.dataset.zoomed = scale > 1 ? 'true' : 'false';
+		resetZoom.textContent = `${Math.round(scale * 100)}%`;
+	};
+	const setScale = (nextScale: number, originX = innerWidth / 2, originY = innerHeight / 2) => {
+		const clampedScale = Math.max(1, Math.min(5, nextScale));
+		const ratio = clampedScale / scale;
+		panX += (originX - innerWidth / 2 - panX) * (1 - ratio);
+		panY += (originY - innerHeight / 2 - panY) * (1 - ratio);
+		scale = clampedScale;
+		applyImageTransform();
+	};
+	const resetImageTransform = () => {
+		scale = 1;
+		panX = 0;
+		panY = 0;
+		applyImageTransform();
+	};
+	const showImage = (index: number) => {
+		if (!viewerImage || !viewerCounter || articleImages.length === 0) return;
+		imageIndex = Math.max(0, Math.min(articleImages.length - 1, index));
+		const image = articleImages[imageIndex];
+		viewerImage.src = image.currentSrc || image.src;
+		viewerImage.alt = image.alt;
+		viewerCounter.textContent = `${imageIndex + 1} / ${articleImages.length}`;
+		if (previousImage) previousImage.disabled = imageIndex === 0;
+		if (nextImage) nextImage.disabled = imageIndex === articleImages.length - 1;
+		resetImageTransform();
+	};
+	const showPreviousImage = () => {
+		if (imageIndex > 0) showImage(imageIndex - 1);
+	};
+	const showNextImage = () => {
+		if (imageIndex < articleImages.length - 1) showImage(imageIndex + 1);
+	};
+	const pointerDistance = () => {
+		const [first, second] = [...pointers.values()];
+		return first && second ? Math.hypot(second.x - first.x, second.y - first.y) : 0;
+	};
+	const pointerCenter = () => {
+		const [first, second] = [...pointers.values()];
+		return first && second ? { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 } : { x: 0, y: 0 };
+	};
+
+	const hasMultipleImages = articleImages.length > 1;
+	if (previousImage) previousImage.hidden = !hasMultipleImages;
+	if (nextImage) nextImage.hidden = !hasMultipleImages;
+	if (viewerCounter) viewerCounter.hidden = !hasMultipleImages;
+	articleImages.forEach((image) => {
+		image.tabIndex = 0;
+		image.setAttribute('role', 'button');
+		image.setAttribute('aria-haspopup', 'dialog');
+		image.setAttribute('aria-controls', 'image-viewer');
+		image.setAttribute('aria-label', image.alt ? `查看图片：${image.alt}` : '查看图片');
+		const open = (event: Event) => {
+			event.preventDefault();
+			if (!imageViewer) return;
+			showImage(articleImages.indexOf(image));
+			imageViewer.showModal();
+		};
+		image.addEventListener('click', open);
+		image.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter' || event.key === ' ') open(event);
+		});
+	});
+	previousImage?.addEventListener('click', showPreviousImage);
+	nextImage?.addEventListener('click', showNextImage);
+	zoomOut?.addEventListener('click', () => setScale(scale / 1.25));
+	zoomIn?.addEventListener('click', () => setScale(scale * 1.25));
+	resetZoom?.addEventListener('click', resetImageTransform);
+	viewerStage?.addEventListener('click', (event) => {
+		if (event.target === viewerStage) imageViewer?.close();
+	});
+	viewerStage?.addEventListener('wheel', (event) => {
+		if (event.deltaY === 0) return;
+		event.preventDefault();
+		setScale(scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15), event.clientX, event.clientY);
+	}, { passive: false });
+	viewerImage?.addEventListener('dblclick', (event) => {
+		setScale(scale > 1 ? 1 : 2, event.clientX, event.clientY);
+	});
+	viewerImage?.addEventListener('pointerdown', (event) => {
+		pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+		if (pointers.size === 1) {
+			swipeStart = { x: event.clientX, y: event.clientY };
+			swipePointerType = event.pointerType;
+			didPinch = false;
+		} else if (pointers.size === 2) {
+			pinchDistance = pointerDistance();
+			pinchCenter = pointerCenter();
+			didPinch = true;
+		}
+	});
+	addEventListener('pointermove', (event) => {
+		const previous = pointers.get(event.pointerId);
+		if (!previous) return;
+		event.preventDefault();
+		pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+		if (pointers.size === 2) {
+			const distance = pointerDistance();
+			const center = pointerCenter();
+			panX += center.x - pinchCenter.x;
+			panY += center.y - pinchCenter.y;
+			if (pinchDistance > 0 && distance > 0) setScale(scale * distance / pinchDistance, center.x, center.y);
+			pinchDistance = distance;
+			pinchCenter = center;
+		} else if (scale > 1) {
+			panX += event.clientX - previous.x;
+			panY += event.clientY - previous.y;
+			applyImageTransform();
+		}
+	}, { passive: false });
+	const finishPointer = (event: PointerEvent) => {
+		if (!pointers.has(event.pointerId)) return;
+		if (!didPinch && swipePointerType === 'touch' && pointers.size === 1 && scale === 1) {
+			const horizontal = event.clientX - swipeStart.x;
+			const vertical = event.clientY - swipeStart.y;
+			if (Math.abs(horizontal) > 60 && Math.abs(horizontal) > Math.abs(vertical)) {
+				if (horizontal < 0) showNextImage();
+				else showPreviousImage();
+			}
+		}
+		pointers.delete(event.pointerId);
+		if (pointers.size < 2) pinchDistance = 0;
+	};
+	addEventListener('pointerup', finishPointer);
+	addEventListener('pointercancel', finishPointer);
+	imageViewer?.addEventListener('close', () => pointers.clear());
+	imageViewer?.addEventListener('keydown', (event) => {
+		if (event.key === 'ArrowLeft') showPreviousImage();
+		else if (event.key === 'ArrowRight') showNextImage();
+		else if (event.key === '+' || event.key === '=') setScale(scale * 1.25);
+		else if (event.key === '-') setScale(scale / 1.25);
+		else if (event.key === '0') resetImageTransform();
+		else return;
+		event.preventDefault();
+	});
 	addEventListener('scroll', sync, { passive: true });
 	addEventListener('resize', measure);
 	addEventListener('load', measure);
@@ -227,6 +423,151 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	:global(.prose h3),
 	:global(.prose h4) {
 		scroll-margin-top: calc(var(--header-height) + 1.5rem);
+	}
+
+	:global(.prose img[role='button']) {
+		cursor: zoom-in;
+	}
+
+	.image-viewer {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100dvh;
+		max-width: none;
+		max-height: none;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		overflow: hidden;
+	}
+
+	.image-viewer[open] {
+		display: block;
+	}
+
+	.image-viewer::backdrop {
+		background: color-mix(in srgb, var(--canvas) 92%, transparent);
+		backdrop-filter: blur(3px);
+	}
+
+	.image-viewer-stage {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		padding: clamp(4rem, 8vw, 6rem) clamp(1rem, 8vw, 6rem);
+		place-items: center;
+		overflow: hidden;
+		touch-action: none;
+	}
+
+	.image-viewer img {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+		border: 1px solid var(--line);
+		cursor: zoom-in;
+		user-select: none;
+		will-change: transform;
+	}
+
+	.image-viewer img[data-zoomed='true'] {
+		cursor: grab;
+	}
+
+	.image-viewer img[data-zoomed='true']:active {
+		cursor: grabbing;
+	}
+
+	.image-viewer form {
+		position: fixed;
+		top: max(1rem, env(safe-area-inset-top));
+		right: max(1rem, env(safe-area-inset-right));
+		z-index: 1;
+	}
+
+	.image-viewer button,
+	.image-viewer-counter {
+		margin: 0;
+		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--surface) 94%, transparent);
+		color: var(--text);
+		backdrop-filter: blur(12px);
+	}
+
+	.image-viewer button {
+		display: grid;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		place-items: center;
+		border-radius: 50%;
+		cursor: pointer;
+	}
+
+	.image-viewer button:disabled {
+		cursor: default;
+		opacity: 0.35;
+	}
+
+	.image-viewer-counter {
+		position: fixed;
+		top: max(1rem, env(safe-area-inset-top));
+		left: max(1rem, env(safe-area-inset-left));
+		z-index: 1;
+		min-width: 4rem;
+		padding: 0.45rem 0.75rem;
+		border-radius: 999px;
+		font-size: 0.8rem;
+		font-variant-numeric: tabular-nums;
+		text-align: center;
+	}
+
+	.image-viewer-previous,
+	.image-viewer-next {
+		position: fixed;
+		top: 50%;
+		z-index: 1;
+		transform: translateY(-50%);
+	}
+
+	.image-viewer-previous {
+		left: max(1rem, env(safe-area-inset-left));
+	}
+
+	.image-viewer-next {
+		right: max(1rem, env(safe-area-inset-right));
+	}
+
+	.image-viewer-zoom {
+		position: fixed;
+		bottom: max(1rem, env(safe-area-inset-bottom));
+		left: 50%;
+		z-index: 1;
+		display: flex;
+		gap: 0.5rem;
+		transform: translateX(-50%);
+	}
+
+	.image-viewer-zoom button {
+		position: static;
+	}
+
+	.image-viewer-zoom .image-viewer-scale {
+		width: 4rem;
+		border-radius: 999px;
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.image-viewer svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: currentColor;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 1.75;
 	}
 
 	.outline-island {
@@ -438,7 +779,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		text-underline-offset: 0.25em;
 	}
 
-	:global(body:has(.outline-dialog[open])) {
+	:global(body:has(.outline-dialog[open], .image-viewer[open])) {
 		overflow: hidden;
 	}
 
