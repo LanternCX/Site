@@ -61,6 +61,7 @@ const friends = page.data.friends ?? [];
 					</div>
 				</section>
 
+				<hr class="comments-divider" />
 				<Comments />
 			</main>
 			<Footer />
@@ -136,6 +137,12 @@ const friends = page.data.friends ?? [];
 
 	.friend-list {
 		margin-top: clamp(4rem, 8vw, 6rem);
+	}
+
+	.comments-divider {
+		margin: 4rem 0 0;
+		border: 0;
+		border-top: 1px solid var(--line);
 	}
 
 	.friends-grid {
