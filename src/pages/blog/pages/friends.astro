@@ -47,7 +47,7 @@ const friends = page.data.friends ?? [];
 						{
 							friends.map((friend) => (
 								<a class="friend" href={friend.url} target="_blank" rel="noopener noreferrer">
-									<Image src={friend.avatar} alt={`${friend.name} 的头像`} width={72} height={72} />
+									<Image src={friend.avatar} alt={`${friend.name} 的头像`} width={72} height={72} loading="eager" />
 									<span>
 										<strong>{friend.name}</strong>
 										<small>{friend.description}</small>
