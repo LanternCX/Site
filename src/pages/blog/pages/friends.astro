@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { getEntry, render } from 'astro:content';
 import BaseHead from '../../../components/BaseHead.astro';
+import Comments from '../../../components/Comments.astro';
 import Footer from '../../../components/Footer.astro';
 import Header from '../../../components/Header.astro';
 import { SITE_TITLE } from '../../../consts';
@@ -46,7 +47,7 @@ const friends = page.data.friends ?? [];
 						{
 							friends.map((friend) => (
 								<a class="friend" href={friend.url} target="_blank" rel="noopener noreferrer">
-									<Image src={friend.avatar} alt={`${friend.name} 的头像`} width={72} height={72} />
+									<Image src={friend.avatar} alt={`${friend.name} 的头像`} width={72} height={72} loading="eager" />
 									<span>
 										<strong>{friend.name}</strong>
 										<small>{friend.description}</small>
@@ -59,6 +60,9 @@ const friends = page.data.friends ?? [];
 						}
 					</div>
 				</section>
+
+				<hr class="comments-divider" />
+				<Comments />
 			</main>
 			<Footer />
 		</div>
@@ -133,6 +137,12 @@ const friends = page.data.friends ?? [];
 
 	.friend-list {
 		margin-top: clamp(4rem, 8vw, 6rem);
+	}
+
+	.comments-divider {
+		margin: 4rem 0 0;
+		border: 0;
+		border-top: 1px solid var(--line);
 	}
 
 	.friends-grid {

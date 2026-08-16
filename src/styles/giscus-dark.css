@@ -26,6 +26,10 @@ main {
 	gap: 24px;
 }
 
+.gsc-loading {
+	visibility: hidden;
+}
+
 .gsc-header {
 	display: none;
 }

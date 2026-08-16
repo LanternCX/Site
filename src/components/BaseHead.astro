@@ -24,13 +24,23 @@ const pageKeywords = [...new Set([...SITE_KEYWORDS, ...keywords])];
 
 <script is:inline>
 	(() => {
-		const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-		let theme = preferred;
+		const root = document.documentElement;
+		const preference = window.matchMedia('(prefers-color-scheme: dark)');
+		const applyTheme = (mode) => {
+			const theme = mode === 'auto' ? (preference.matches ? 'dark' : 'light') : mode;
+			root.dataset.themeMode = mode;
+			root.dataset.theme = theme;
+			root.style.colorScheme = theme;
+		};
+		let mode = 'auto';
 		try {
-			theme = localStorage.getItem('theme') || preferred;
+			const stored = localStorage.getItem('theme');
+			if (stored === 'light' || stored === 'dark') mode = stored;
 		} catch {}
-		document.documentElement.dataset.theme = theme;
-		document.documentElement.style.colorScheme = theme;
+		applyTheme(mode);
+		preference.onchange = () => {
+			if (root.dataset.themeMode === 'auto') applyTheme('auto');
+		};
 	})();
 </script>
 
