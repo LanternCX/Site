@@ -163,6 +163,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	const zoomIn = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-zoom-in]');
 	const resetZoom = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-reset]');
 	const articleImages = [...document.querySelectorAll<HTMLImageElement>('.prose img:not([src^="data:"])')];
+	const codeBlocks = [...document.querySelectorAll<HTMLElement>('.prose pre')];
 	const desktopOutline = matchMedia('(min-width: 1220px)');
 	const sections = dialogLinks.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))));
 	const footer = document.querySelector<HTMLElement>('.site-footer');
@@ -179,6 +180,35 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	let swipePointerType = '';
 	let didPinch = false;
 	const pointers = new Map<number, { x: number; y: number }>();
+
+	codeBlocks.forEach((codeBlock) => {
+		const code = codeBlock.querySelector('code');
+		if (!code) return;
+		const wrapper = document.createElement('div');
+		const button = document.createElement('button');
+		wrapper.className = 'code-block';
+		button.className = 'code-copy';
+		button.type = 'button';
+		button.setAttribute('aria-label', '复制代码');
+		button.innerHTML = '<svg class="code-copy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 8h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><path d="M16 8V6a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/></svg><svg class="code-copy-success" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+		codeBlock.before(wrapper);
+		wrapper.append(codeBlock, button);
+		let resetTimer: ReturnType<typeof setTimeout>;
+		button.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(code.textContent ?? '');
+				button.dataset.copied = 'true';
+				button.setAttribute('aria-label', '代码已复制');
+			} catch {
+				button.setAttribute('aria-label', '复制失败');
+			}
+			clearTimeout(resetTimer);
+			resetTimer = setTimeout(() => {
+				delete button.dataset.copied;
+				button.setAttribute('aria-label', '复制代码');
+			}, 2000);
+		});
+	});
 
 	const measure = () => {
 		positions = sections.map((section) => (section?.getBoundingClientRect().top ?? 0) + scrollY);
@@ -427,6 +457,68 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 
 	:global(.prose img[role='button']) {
 		cursor: zoom-in;
+	}
+
+	:global(.code-block) {
+		position: relative;
+		max-width: 100%;
+		margin: 2rem 0;
+	}
+
+	:global(.code-block > pre) {
+		margin: 0;
+	}
+
+	:global(.code-copy) {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		display: grid;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		place-items: center;
+		border: 1px solid var(--line);
+		border-radius: 6px;
+		background: var(--code-surface);
+		color: var(--muted);
+		cursor: pointer;
+		opacity: 0;
+	}
+
+	:global(.code-block:hover .code-copy),
+	:global(.code-copy:focus-visible) {
+		opacity: 1;
+	}
+
+	:global(.code-copy:hover),
+	:global(.code-copy[data-copied='true']) {
+		color: var(--accent);
+	}
+
+	:global(.code-copy svg) {
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: currentColor;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 1.75;
+	}
+
+	:global(.code-copy-success),
+	:global(.code-copy[data-copied='true'] .code-copy-icon) {
+		display: none;
+	}
+
+	:global(.code-copy[data-copied='true'] .code-copy-success) {
+		display: block;
+	}
+
+	@media (hover: none) {
+		:global(.code-copy) {
+			opacity: 1;
+		}
 	}
 
 	.image-viewer {
