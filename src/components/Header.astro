@@ -36,7 +36,12 @@ const nav = [
 					<path d="m16 16 4 4"></path>
 				</svg>
 			</button>
-			<button class="icon-button" type="button" data-theme-toggle aria-label="切换至深色主题">
+			<button class="icon-button" type="button" data-theme-toggle aria-label="当前为自动主题，切换至浅色主题">
+				<svg class="theme-auto" viewBox="0 0 24 24" aria-hidden="true">
+					<circle cx="12" cy="12" r="6"></circle>
+					<path d="M12 7a5 5 0 0 1 0 10Z" fill="currentColor" stroke="none"></path>
+					<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+				</svg>
 				<svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
 					<circle cx="12" cy="12" r="3.5"></circle>
 					<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
@@ -97,18 +102,26 @@ const nav = [
 
 <script>
 	const root = document.documentElement;
+	const themeModes = ['auto', 'light', 'dark'];
+	const themeLabels: Record<string, string> = { auto: '自动', light: '浅色', dark: '深色' };
 	const themeButtons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
 	const syncThemeButtons = () => {
-		const next = root.dataset.theme === 'dark' ? '浅色' : '深色';
-		themeButtons.forEach((button) => (button.ariaLabel = `切换至${next}主题`));
+		const mode = root.dataset.themeMode ?? 'auto';
+		const next = themeModes[(themeModes.indexOf(mode) + 1) % themeModes.length];
+		themeButtons.forEach(
+			(button) => (button.ariaLabel = `当前为${themeLabels[mode]}主题，切换至${themeLabels[next]}主题`),
+		);
 	};
 	themeButtons.forEach((button) => {
 		button.addEventListener('click', () => {
-			const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+			const mode = themeModes[(themeModes.indexOf(root.dataset.themeMode ?? 'auto') + 1) % themeModes.length];
+			const theme =
+				mode === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode;
+			root.dataset.themeMode = mode;
 			root.dataset.theme = theme;
 			root.style.colorScheme = theme;
 			try {
-				localStorage.setItem('theme', theme);
+				localStorage.setItem('theme', mode);
 			} catch {}
 			syncThemeButtons();
 		});
@@ -244,12 +257,15 @@ const nav = [
 		transform: translateY(-5px) rotate(-45deg);
 	}
 
-	.moon,
-	:global(html[data-theme='dark']) .sun {
+	.theme-auto,
+	.sun,
+	.moon {
 		display: none;
 	}
 
-	:global(html[data-theme='dark']) .moon {
+	:global(html[data-theme-mode='auto']) .theme-auto,
+	:global(html[data-theme-mode='light']) .sun,
+	:global(html[data-theme-mode='dark']) .moon {
 		display: block;
 	}
 
