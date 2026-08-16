@@ -177,7 +177,6 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	let pinchDistance = 0;
 	let pinchCenter = { x: 0, y: 0 };
 	let swipeStart = { x: 0, y: 0 };
-	let swipePointerType = '';
 	let didPinch = false;
 	const pointers = new Map<number, { x: number; y: number }>();
 
@@ -354,9 +353,9 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 		if (pointers.size === 1) {
 			swipeStart = { x: event.clientX, y: event.clientY };
-			swipePointerType = event.pointerType;
 			didPinch = false;
 		} else if (pointers.size === 2) {
+			if (scale === 1) resetImageTransform();
 			pinchDistance = pointerDistance();
 			pinchCenter = pointerCenter();
 			didPinch = true;
@@ -379,11 +378,14 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 			panX += event.clientX - previous.x;
 			panY += event.clientY - previous.y;
 			applyImageTransform();
+		} else if (!didPinch && viewerImage) {
+			viewerImage.style.transform = `translate3d(${event.clientX - swipeStart.x}px, 0, 0) scale(1)`;
+			viewerImage.dataset.dragging = 'true';
 		}
 	}, { passive: false });
-	const finishPointer = (event: PointerEvent) => {
+	const finishPointer = (event: PointerEvent, cancelled = false) => {
 		if (!pointers.has(event.pointerId)) return;
-		if (!didPinch && swipePointerType === 'touch' && pointers.size === 1 && scale === 1) {
+		if (!cancelled && !didPinch && pointers.size === 1 && scale === 1) {
 			const horizontal = event.clientX - swipeStart.x;
 			const vertical = event.clientY - swipeStart.y;
 			if (Math.abs(horizontal) > 60 && Math.abs(horizontal) > Math.abs(vertical)) {
@@ -393,10 +395,15 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		}
 		pointers.delete(event.pointerId);
 		if (pointers.size < 2) pinchDistance = 0;
+		if (pointers.size === 0 && scale === 1) resetImageTransform();
+		if (viewerImage) delete viewerImage.dataset.dragging;
 	};
 	addEventListener('pointerup', finishPointer);
-	addEventListener('pointercancel', finishPointer);
-	imageViewer?.addEventListener('close', () => pointers.clear());
+	addEventListener('pointercancel', (event) => finishPointer(event, true));
+	imageViewer?.addEventListener('close', () => {
+		pointers.clear();
+		if (viewerImage) delete viewerImage.dataset.dragging;
+	});
 	imageViewer?.addEventListener('keydown', (event) => {
 		if (event.key === 'ArrowLeft') showPreviousImage();
 		else if (event.key === 'ArrowRight') showNextImage();
@@ -568,6 +575,10 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	}
 
 	.image-viewer img[data-zoomed='true']:active {
+		cursor: grabbing;
+	}
+
+	.image-viewer img[data-dragging='true'] {
 		cursor: grabbing;
 	}
 
@@ -883,6 +894,17 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	}
 
 	@media (max-width: 720px) {
+		.image-viewer-stage {
+			padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+		}
+
+		.image-viewer-previous,
+		.image-viewer-next {
+			top: auto;
+			bottom: max(1rem, env(safe-area-inset-bottom));
+			transform: none;
+		}
+
 		.outline-island {
 			bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + var(--footer-offset, 0px));
 			max-width: calc(100vw - 1.5rem);
