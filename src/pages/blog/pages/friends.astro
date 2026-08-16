@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { getEntry, render } from 'astro:content';
 import BaseHead from '../../../components/BaseHead.astro';
+import Comments from '../../../components/Comments.astro';
 import Footer from '../../../components/Footer.astro';
 import Header from '../../../components/Header.astro';
 import { SITE_TITLE } from '../../../consts';
@@ -59,6 +60,8 @@ const friends = page.data.friends ?? [];
 						}
 					</div>
 				</section>
+
+				<Comments />
 			</main>
 			<Footer />
 		</div>
