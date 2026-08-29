@@ -68,7 +68,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 				</div>
 				<p class="image-viewer-counter" aria-live="polite" data-image-viewer-counter></p>
 				<form method="dialog">
-					<button type="submit" aria-label="关闭图片查看器">
+					<button type="button" aria-label="关闭图片查看器" data-image-viewer-close>
 						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
 					</button>
 				</form>
@@ -164,6 +164,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	const viewerStage = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-stage]');
 	const viewerTrack = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-track]');
 	const viewerCounter = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-counter]');
+	const viewerClose = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-close]');
 	const previousImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-previous]');
 	const nextImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-next]');
 	const zoomOut = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-zoom-out]');
@@ -187,6 +188,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	let didPinch = false;
 	let isSliding = false;
 	let pendingImageIndex: number | undefined;
+	let closeTimer: ReturnType<typeof setTimeout>;
 	const pointers = new Map<number, { x: number; y: number }>();
 
 	codeBlocks.forEach((codeBlock) => {
@@ -264,6 +266,15 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		if (event.target === dialog) dialog.close();
 	});
 	dialogLinks.forEach((link) => link.addEventListener('click', () => dialog?.close()));
+	const closeImageViewer = () => {
+		if (!imageViewer?.open || imageViewer.dataset.closing === 'true') return;
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			imageViewer.close();
+			return;
+		}
+		imageViewer.dataset.closing = 'true';
+		closeTimer = setTimeout(() => imageViewer.close(), 160);
+	};
 	const clampPan = () => {
 		if (!viewerImage || !viewerStage) return;
 		const style = getComputedStyle(viewerStage);
@@ -374,6 +385,8 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		const open = (event: Event) => {
 			event.preventDefault();
 			if (!imageViewer) return;
+			clearTimeout(closeTimer);
+			delete imageViewer.dataset.closing;
 			showImage(articleImages.indexOf(image));
 			imageViewer.showModal();
 		};
@@ -388,8 +401,9 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	zoomIn?.addEventListener('click', () => setScale(scale * 1.25));
 	resetZoom?.addEventListener('click', resetImageTransform);
 	viewerStage?.addEventListener('click', (event) => {
-		if (event.target === viewerStage) imageViewer?.close();
+		if (event.target === viewerStage) closeImageViewer();
 	});
+	viewerClose?.addEventListener('click', closeImageViewer);
 	viewerStage?.addEventListener('wheel', (event) => {
 		if (event.deltaY === 0) return;
 		event.preventDefault();
@@ -400,6 +414,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	});
 	viewerImage?.addEventListener('pointerdown', (event) => {
 		if (isSliding) return;
+		viewerImage.dataset.interacting = 'true';
 		pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 		if (pointers.size === 1) {
 			swipeStart = { x: event.clientX, y: event.clientY };
@@ -449,19 +464,32 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		pointers.delete(event.pointerId);
 		if (pointers.size < 2) pinchDistance = 0;
 		if (cancelled && pointers.size === 0 && scale === 1) setTrackOffset(0);
-		if (viewerImage) delete viewerImage.dataset.dragging;
+		if (viewerImage && pointers.size === 0) {
+			delete viewerImage.dataset.dragging;
+			delete viewerImage.dataset.interacting;
+		}
 	};
 	addEventListener('pointerup', finishPointer);
 	addEventListener('pointercancel', (event) => finishPointer(event, true));
+	imageViewer?.addEventListener('cancel', (event) => {
+		event.preventDefault();
+		closeImageViewer();
+	});
 	imageViewer?.addEventListener('close', () => {
+		clearTimeout(closeTimer);
+		delete imageViewer.dataset.closing;
 		pointers.clear();
 		isSliding = false;
 		pendingImageIndex = undefined;
 		resetTrack();
-		if (viewerImage) delete viewerImage.dataset.dragging;
+		if (viewerImage) {
+			delete viewerImage.dataset.dragging;
+			delete viewerImage.dataset.interacting;
+		}
 	});
 	imageViewer?.addEventListener('keydown', (event) => {
-		if (event.key === 'ArrowLeft') showPreviousImage();
+		if (event.key === 'Escape') closeImageViewer();
+		else if (event.key === 'ArrowLeft') showPreviousImage();
 		else if (event.key === 'ArrowRight') showNextImage();
 		else if (event.key === '+' || event.key === '=') setScale(scale * 1.25);
 		else if (event.key === '-') setScale(scale / 1.25);
@@ -595,15 +623,48 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		border: 0;
 		background: transparent;
 		overflow: hidden;
+		transition: opacity 160ms ease;
+		opacity: 0;
 	}
 
 	.image-viewer[open] {
 		display: block;
+		opacity: 1;
+	}
+
+	@starting-style {
+		.image-viewer[open] {
+			opacity: 0;
+		}
+	}
+
+	.image-viewer[data-closing='true'] {
+		opacity: 0;
 	}
 
 	.image-viewer::backdrop {
+		background: transparent;
+		transition:
+			background 160ms ease,
+			backdrop-filter 160ms ease;
+		backdrop-filter: blur(0);
+	}
+
+	.image-viewer[open]::backdrop {
 		background: color-mix(in srgb, var(--canvas) 92%, transparent);
 		backdrop-filter: blur(3px);
+	}
+
+	.image-viewer[data-closing='true']::backdrop {
+		background: transparent;
+		backdrop-filter: blur(0);
+	}
+
+	@starting-style {
+		.image-viewer[open]::backdrop {
+			background: transparent;
+			backdrop-filter: blur(0);
+		}
 	}
 
 	.image-viewer-stage {
@@ -640,7 +701,12 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		border: 1px solid var(--line);
 		cursor: zoom-in;
 		user-select: none;
+		transition: transform 160ms ease;
 		will-change: transform;
+	}
+
+	.image-viewer img[data-interacting='true'] {
+		transition: none;
 	}
 
 	.image-viewer img[hidden] {
@@ -695,6 +761,15 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		place-items: center;
 		border-radius: 50%;
 		cursor: pointer;
+		transition:
+			border-color 140ms ease,
+			color 140ms ease,
+			opacity 140ms ease;
+	}
+
+	.image-viewer button:not(:disabled):hover {
+		border-color: var(--accent);
+		color: var(--accent);
 	}
 
 	.image-viewer button:disabled {
