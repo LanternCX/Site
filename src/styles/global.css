@@ -81,6 +81,7 @@
 
 html {
 	background: var(--canvas);
+	scrollbar-gutter: stable;
 	scroll-behavior: smooth;
 }
 
