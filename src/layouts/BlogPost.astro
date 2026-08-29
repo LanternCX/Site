@@ -60,7 +60,11 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 			</main>
 			<dialog id="image-viewer" class="image-viewer" aria-label="图片查看器" data-image-viewer>
 				<div class="image-viewer-stage" data-image-viewer-stage>
-					<img alt="" draggable="false" data-image-viewer-content />
+					<div class="image-viewer-track" data-image-viewer-track>
+						<img alt="" aria-hidden="true" draggable="false" data-image-viewer-previous-content />
+						<img alt="" draggable="false" data-image-viewer-content />
+						<img alt="" aria-hidden="true" draggable="false" data-image-viewer-next-content />
+					</div>
 				</div>
 				<p class="image-viewer-counter" aria-live="polite" data-image-viewer-counter></p>
 				<form method="dialog">
@@ -155,7 +159,10 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	const articleHeader = document.querySelector<HTMLElement>('.article-header');
 	const imageViewer = document.querySelector<HTMLDialogElement>('[data-image-viewer]');
 	const viewerImage = imageViewer?.querySelector<HTMLImageElement>('[data-image-viewer-content]');
+	const previousViewerImage = imageViewer?.querySelector<HTMLImageElement>('[data-image-viewer-previous-content]');
+	const nextViewerImage = imageViewer?.querySelector<HTMLImageElement>('[data-image-viewer-next-content]');
 	const viewerStage = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-stage]');
+	const viewerTrack = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-track]');
 	const viewerCounter = imageViewer?.querySelector<HTMLElement>('[data-image-viewer-counter]');
 	const previousImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-previous]');
 	const nextImage = imageViewer?.querySelector<HTMLButtonElement>('[data-image-viewer-next]');
@@ -178,6 +185,8 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	let pinchCenter = { x: 0, y: 0 };
 	let swipeStart = { x: 0, y: 0 };
 	let didPinch = false;
+	let isSliding = false;
+	let pendingImageIndex: number | undefined;
 	const pointers = new Map<number, { x: number; y: number }>();
 
 	codeBlocks.forEach((codeBlock) => {
@@ -286,22 +295,62 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		panY = 0;
 		applyImageTransform();
 	};
+	const setTrackOffset = (offset: number, dragging = false) => {
+		if (!viewerTrack) return;
+		viewerTrack.dataset.dragging = String(dragging);
+		viewerTrack.style.transform = `translate3d(calc(-100% + ${offset}px), 0, 0)`;
+	};
+	const resetTrack = () => {
+		if (!viewerTrack) return;
+		setTrackOffset(0, true);
+		viewerTrack.getBoundingClientRect();
+		viewerTrack.dataset.dragging = 'false';
+	};
+	const setViewerImage = (target: HTMLImageElement | undefined, index: number) => {
+		if (!target) return;
+		const image = articleImages[index];
+		target.hidden = !image;
+		if (image) target.src = image.currentSrc || image.src;
+	};
 	const showImage = (index: number) => {
 		if (!viewerImage || !viewerCounter || articleImages.length === 0) return;
 		imageIndex = Math.max(0, Math.min(articleImages.length - 1, index));
 		const image = articleImages[imageIndex];
 		viewerImage.src = image.currentSrc || image.src;
 		viewerImage.alt = image.alt;
+		setViewerImage(previousViewerImage, imageIndex - 1);
+		setViewerImage(nextViewerImage, imageIndex + 1);
 		viewerCounter.textContent = `${imageIndex + 1} / ${articleImages.length}`;
 		if (previousImage) previousImage.disabled = imageIndex === 0;
 		if (nextImage) nextImage.disabled = imageIndex === articleImages.length - 1;
+		isSliding = false;
+		pendingImageIndex = undefined;
+		resetTrack();
 		resetImageTransform();
 	};
+	const slideTo = (index: number) => {
+		if (!viewerTrack || isSliding || index < 0 || index >= articleImages.length) {
+			setTrackOffset(0);
+			return;
+		}
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			showImage(index);
+			return;
+		}
+		isSliding = true;
+		pendingImageIndex = index;
+		viewerTrack.dataset.dragging = 'false';
+		viewerTrack.style.transform = `translate3d(${index < imageIndex ? '0' : '-200%'}, 0, 0)`;
+	};
+	viewerTrack?.addEventListener('transitionend', (event) => {
+		if (event.target !== viewerTrack || event.propertyName !== 'transform' || pendingImageIndex === undefined) return;
+		showImage(pendingImageIndex);
+	});
 	const showPreviousImage = () => {
-		if (imageIndex > 0) showImage(imageIndex - 1);
+		if (imageIndex > 0) slideTo(imageIndex - 1);
 	};
 	const showNextImage = () => {
-		if (imageIndex < articleImages.length - 1) showImage(imageIndex + 1);
+		if (imageIndex < articleImages.length - 1) slideTo(imageIndex + 1);
 	};
 	const pointerDistance = () => {
 		const [first, second] = [...pointers.values()];
@@ -350,6 +399,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 		setScale(scale > 1 ? 1 : 2, event.clientX, event.clientY);
 	});
 	viewerImage?.addEventListener('pointerdown', (event) => {
+		if (isSliding) return;
 		pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 		if (pointers.size === 1) {
 			swipeStart = { x: event.clientX, y: event.clientY };
@@ -378,8 +428,10 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 			panX += event.clientX - previous.x;
 			panY += event.clientY - previous.y;
 			applyImageTransform();
-		} else if (!didPinch && viewerImage) {
-			viewerImage.style.transform = `translate3d(${event.clientX - swipeStart.x}px, 0, 0) scale(1)`;
+		} else if (!didPinch && viewerTrack) {
+			const offset = event.clientX - swipeStart.x;
+			const atBoundary = (offset > 0 && imageIndex === 0) || (offset < 0 && imageIndex === articleImages.length - 1);
+			setTrackOffset(atBoundary ? offset / 3 : offset, true);
 			viewerImage.dataset.dragging = 'true';
 		}
 	}, { passive: false });
@@ -389,19 +441,23 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 			const horizontal = event.clientX - swipeStart.x;
 			const vertical = event.clientY - swipeStart.y;
 			if (Math.abs(horizontal) > 60 && Math.abs(horizontal) > Math.abs(vertical)) {
-				if (horizontal < 0) showNextImage();
-				else showPreviousImage();
-			}
+				if (horizontal < 0 && imageIndex < articleImages.length - 1) slideTo(imageIndex + 1);
+				else if (horizontal > 0 && imageIndex > 0) slideTo(imageIndex - 1);
+				else setTrackOffset(0);
+			} else setTrackOffset(0);
 		}
 		pointers.delete(event.pointerId);
 		if (pointers.size < 2) pinchDistance = 0;
-		if (pointers.size === 0 && scale === 1) resetImageTransform();
+		if (cancelled && pointers.size === 0 && scale === 1) setTrackOffset(0);
 		if (viewerImage) delete viewerImage.dataset.dragging;
 	};
 	addEventListener('pointerup', finishPointer);
 	addEventListener('pointercancel', (event) => finishPointer(event, true));
 	imageViewer?.addEventListener('close', () => {
 		pointers.clear();
+		isSliding = false;
+		pendingImageIndex = undefined;
+		resetTrack();
 		if (viewerImage) delete viewerImage.dataset.dragging;
 	});
 	imageViewer?.addEventListener('keydown', (event) => {
@@ -551,23 +607,55 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 	}
 
 	.image-viewer-stage {
+		--image-viewer-padding-x: clamp(1rem, 8vw, 6rem);
+		--image-viewer-padding-top: clamp(4rem, 8vw, 6rem);
+		--image-viewer-padding-bottom: clamp(4rem, 8vw, 6rem);
 		position: absolute;
 		inset: 0;
-		display: grid;
-		padding: clamp(4rem, 8vw, 6rem) clamp(1rem, 8vw, 6rem);
-		place-items: center;
 		overflow: hidden;
 		touch-action: none;
 	}
 
+	.image-viewer-track {
+		display: grid;
+		width: 100%;
+		height: 100%;
+		grid-template-columns: repeat(3, 100%);
+		transform: translate3d(-100%, 0, 0);
+		transition: transform 160ms ease;
+	}
+
+	.image-viewer-track[data-dragging='true'] {
+		transition: none;
+	}
+
 	.image-viewer img {
-		max-width: 100%;
-		max-height: 100%;
+		grid-row: 1;
+		align-self: center;
+		justify-self: center;
+		max-width: calc(100% - var(--image-viewer-padding-x) - var(--image-viewer-padding-x));
+		max-height: calc(100% - var(--image-viewer-padding-top) - var(--image-viewer-padding-bottom));
 		object-fit: contain;
 		border: 1px solid var(--line);
 		cursor: zoom-in;
 		user-select: none;
 		will-change: transform;
+	}
+
+	.image-viewer img[hidden] {
+		visibility: hidden;
+	}
+
+	.image-viewer img[data-image-viewer-previous-content] {
+		grid-column: 1;
+	}
+
+	.image-viewer img[data-image-viewer-content] {
+		grid-column: 2;
+	}
+
+	.image-viewer img[data-image-viewer-next-content] {
+		grid-column: 3;
 	}
 
 	.image-viewer img[data-zoomed='true'] {
@@ -895,7 +983,7 @@ const outline = outlineItems(headings, duplicateContentTitle ? title : undefined
 
 	@media (max-width: 720px) {
 		.image-viewer-stage {
-			padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+			--image-viewer-padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 		}
 
 		.image-viewer-previous,
